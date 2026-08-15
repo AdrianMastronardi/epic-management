@@ -1,0 +1,57 @@
+{
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.associations": {
+    "*.md": "markdown",
+    "*.bib": "bibtex",
+    "*.csl": "xml",
+    "*.tex": "latex"
+  },
+  "terminal.integrated.fontFamily": "FiraCode Nerd Font Mono",
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.lineHeight": 1.1,
+  "editor.fontFamily": "FiraCode Nerd Font Mono",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 14,
+  "editor.lineHeight": 1.3,
+  "editor.renderWhitespace": "selection",
+  "editor.wordWrap": "on",
+  "editor.rulers": [
+    100
+  ],
+  "editor.stickyScroll.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.minimap.enabled": false,
+  "breadcrumbs.enabled": true,
+  "workbench.statusBar.visible": true,
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+  "search.exclude": {
+    "output/**": true,
+    "tmp/**": true
+  },
+  "files.watcherExclude": {
+    "output/**": true,
+    "tmp/**": true
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    }
+  },
+  "[bibtex]": {
+    "editor.wordWrap": "on",
+    "editor.formatOnSave": false
+  },
+  "[latex]": {
+    "editor.wordWrap": "on",
+    "editor.formatOnSave": false
+  },
+  "prettier.proseWrap": "preserve",
+  "prettier.printWidth": 9999
+}

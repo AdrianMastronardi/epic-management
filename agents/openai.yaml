@@ -1,0 +1,4 @@
+interface:
+  display_name: "Epic Management"
+  short_description: "help prepare refine publish prepare-and-publish resume inspect"
+  default_prompt: "Use $epic-management help to show its operations and usage examples."
