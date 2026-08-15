@@ -2,7 +2,7 @@
 
 A cross-host skill for turning functional and technical specifications into complete product EPICs and traceable GitHub stories without losing source information.
 
-Epic Management works with Codex and Claude Code. It keeps one self-contained, versioned EPIC document as the complete source of product and technical context, then projects the relevant portions into executable EPIC and story issues.
+Epic Management works with Codex and Claude Code. It prepares and refines one self-contained EPIC under `tmp/`, then publication projects the relevant portions into executable issues, moves the approved EPIC to `docs/epics/`, and updates `docs/epic-index.md`.
 
 ## Why it exists
 
@@ -12,11 +12,13 @@ Epic Management prevents that loss by transforming the complete specification in
 
 ## Core guarantees
 
-- Exactly one versioned EPIC document contains the complete functional and technical specification.
+- After publication, exactly one versioned EPIC document contains the complete functional and technical specification.
 - Every specification block is classified as `context` or `operational`.
 - Every operational block maps to the EPIC issue, at least one story issue, or both.
 - Every generated issue body includes the complete applicable text, not only a summary, identifier, or link.
 - No issue or versioned artifact depends on `tmp/` or another ignored directory.
+- A new EPIC does not enter version control during `prepare` or `refine`; both operations keep it under `tmp/` and do not create issues.
+- Only approved publication creates GitHub issues, moves the EPIC to `docs/epics/`, and updates `docs/epic-index.md`.
 - Publication requires an exact preview and explicit approval, and partial runs resume without duplication.
 - Versioned EPIC artifacts are never labelled as drafts.
 - The skill manages the backlog but never implements its stories.
@@ -26,9 +28,9 @@ Epic Management prevents that loss by transforming the complete specification in
 | Operation             | Required input                                                             | Result                                                                                                             |
 | --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `help`                | None                                                                       | Show usage, operations, and examples without reading or writing anything.                                          |
-| `prepare`             | Source specification path                                                  | Create or complete the single EPIC document, validate coverage, and stop before publication.                       |
-| `refine`              | EPIC document path; source path when it cannot be established from context | Restore missing source information, validate coverage, and stop before publication.                                |
-| `publish`             | Approved EPIC document path                                                | Validate and preview exact GitHub and repository writes, require approval, and publish idempotently.               |
+| `prepare`             | Source specification path                                                  | Create or complete the working EPIC under `tmp/`, validate coverage, and stop without publication writes.          |
+| `refine`              | EPIC document path; source path when it cannot be established from context | Refine the working EPIC under `tmp/`, validate coverage, and stop without publication writes.                      |
+| `publish`             | Approved EPIC document path                                                | Preview and approve exact writes, create or reuse issues, move the EPIC to `docs/epics/`, and update the index.    |
 | `prepare-and-publish` | Source specification path                                                  | Prepare the EPIC, require approval at the coverage and write checkpoint, and then publish it.                      |
 | `resume`              | EPIC number or document path                                               | Discover partial local and remote state, reuse existing resources, and continue without duplicates after approval. |
 | `inspect`             | Optional workflow or artifact path                                         | Analyze an EPIC workflow without changing local or remote state.                                                   |
@@ -78,11 +80,11 @@ A bare invocation shows help and performs no repository reads, GitHub access, or
 ## Workflow
 
 1. Write the complete functional and technical specification in a temporary source file.
-2. Run `prepare` to transform that source into one complete EPIC document.
+2. Run `prepare` to transform that source into one complete working EPIC under `tmp/`.
 3. Review the coverage checkpoint, including every source section, block classification, issue destination, exclusion, and open decision.
 4. Approve the checkpoint only when the EPIC preserves the complete source and the proposed issue routing is correct.
 5. Run `publish`, or continue `prepare-and-publish`, to preview the exact issues and repository writes.
-6. Approve the writes, then let the skill create or reuse GitHub resources, archive the EPIC document, and open the documentation pull request.
+6. Approve the writes, then let the skill create or reuse GitHub resources, move the EPIC to `docs/epics/`, update `docs/epic-index.md`, and open the documentation pull request.
 7. After a human merges the pull request, run `resume` to verify the merge and complete safe post-merge cleanup.
 
 The skill reads and obeys repository-specific guidance for language, labels, GitHub transport, protected branches, commits, checks, and pull-request lifecycle.
@@ -90,6 +92,14 @@ The skill reads and obeys repository-specific guidance for language, labels, Git
 ## EPIC document model
 
 The canonical template is [assets/epic-template.md](assets/epic-template.md). Each coherent source block receives a stable `SPEC-NNN-SSS` identifier and one row in the GitHub distribution table.
+
+When publication must create a missing `docs/epic-index.md`, it starts from [assets/epic-index-template.md](assets/epic-index-template.md). Each heading links to its versioned EPIC document with a relative path. Existing indexes keep their repository-specific structure and ordering.
+
+Every index entry names and directly links all GitHub story issues in a dedicated `Stories` list, reserves `Notes` for exceptional context, and uses a controlled lifecycle status. Completed EPICs additionally record concise `Final verification`, `Findings`, and `Exit state` summaries; these completion paragraphs remain absent while an EPIC is active.
+
+When supported, the EPIC issue is the native parent of its story sub-issues and explicit blocking relationships use GitHub dependencies. GitHub remains authoritative for live progress and blocking state; the versioned index preserves navigation and historical traceability.
+
+Unpublished future work stays outside the index. Repositories that use a Markdown backlog can create `docs/epic-backlog.md` from [assets/epic-backlog-template.md](assets/epic-backlog-template.md); repositories using GitHub Projects keep that system authoritative instead.
 
 `context` blocks may remain only in the EPIC document. `operational` blocks must reach the EPIC issue, at least one story issue, or both. Story sections declare their exact `Applicable blocks`, and the validator checks that declaration against the distribution table.
 
@@ -119,6 +129,8 @@ epic-management/
 ├── agents/
 │   └── openai.yaml  # Codex discovery metadata
 ├── assets/
+│   ├── epic-backlog-template.md  # optional unpublished EPIC backlog template
+│   ├── epic-index-template.md  # published EPIC index template
 │   └── epic-template.md  # canonical EPIC document template
 ├── references/
 │   └── github-publication.md  # approval-gated publication protocol

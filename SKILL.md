@@ -1,6 +1,6 @@
 ---
 name: epic-management
-description: Create, refine, validate, publish, or resume product EPICs from functional and technical specifications without losing source information. Use when the user invokes epic-management or wants to turn a specification into an EPIC, split an EPIC into GitHub stories, create or resume EPIC and story issues, archive an EPIC in a repository, or repair an EPIC-creation workflow. Support the explicit operations help, prepare, refine, publish, prepare-and-publish, resume, and inspect; when invoked without an operation, show usage and take no action. Produce one self-contained versioned EPIC document, map every operational specification block to the EPIC issue, one or more story issues, or both, and prevent implementation dependencies from remaining under tmp/. Do not use for implementing story code, routine issue triage, prioritizing an unrelated backlog, or creating a standalone issue.
+description: Create, refine, validate, publish, or resume product EPICs from functional and technical specifications without losing source information. Use when the user invokes epic-management or wants to turn a specification into an EPIC, split an EPIC into GitHub stories, create or resume EPIC and story issues, archive an EPIC in a repository, or repair an EPIC-creation workflow. Support the explicit operations help, prepare, refine, publish, prepare-and-publish, resume, and inspect; when invoked without an operation, show usage and take no action. Keep prepared and refined EPIC documents under tmp/; only publication may create GitHub issues, move the approved EPIC to docs/epics/, and update docs/epic-index.md. Map every operational specification block to the EPIC issue, one or more story issues, or both, and prevent implementation dependencies from remaining under tmp/. Do not use for implementing story code, routine issue triage, prioritizing an unrelated backlog, or creating a standalone issue.
 ---
 
 # Epic Management
@@ -16,15 +16,15 @@ Use the native explicit-invocation syntax of the active host:
 
 Accept these operations:
 
-| Operation             | Required input                                                             | Result                                                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`                | None                                                                       | Show usage, operations, and examples. Make no reads or writes.                                                                                |
-| `prepare`             | Source specification path                                                  | Create or complete the single EPIC document, validate coverage, present the checkpoint, and stop before publication.                          |
-| `refine`              | EPIC document path; source path when it cannot be established from context | Compare the EPIC with its source, restore missing information, validate coverage, and stop before publication.                                |
-| `publish`             | Approved EPIC document path                                                | Validate, preview the exact GitHub and repository writes, require approval, and then publish idempotently.                                    |
-| `prepare-and-publish` | Source specification path                                                  | Run `prepare`, require approval at the coverage and write checkpoint, and only then continue with `publish`.                                  |
-| `resume`              | EPIC number or document path                                               | Discover partial local and remote state, reuse existing resources, preview missing writes, require approval, and continue without duplicates. |
-| `inspect`             | Optional workflow or artifact path                                         | Analyze the EPIC workflow without changing local or remote state.                                                                             |
+| Operation             | Required input                                                             | Result                                                                                                                                            |
+| --------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`                | None                                                                       | Show usage, operations, and examples. Make no reads or writes.                                                                                    |
+| `prepare`             | Source specification path                                                  | Create or complete one working EPIC under `tmp/`, validate coverage, present the checkpoint, and leave GitHub and versioned EPIC files unchanged. |
+| `refine`              | EPIC document path; source path when it cannot be established from context | Refine the working EPIC under `tmp/`, validate coverage, present the checkpoint, and leave GitHub and versioned EPIC files unchanged.             |
+| `publish`             | Approved EPIC document path                                                | Validate the working EPIC, preview and approve exact writes, create or reuse GitHub issues, move the EPIC to `docs/epics/`, and update the index. |
+| `prepare-and-publish` | Source specification path                                                  | Run `prepare` under `tmp/`, require approval at each checkpoint, and only then cross the publication boundary.                                    |
+| `resume`              | EPIC number or document path                                               | Discover an already-started publication, reuse existing resources, preview missing writes, require approval, and continue without duplicates.     |
+| `inspect`             | Optional workflow or artifact path                                         | Analyze the EPIC workflow without changing local or remote state.                                                                                 |
 
 Apply these dispatch rules before reading the repository or taking any other action:
 
@@ -68,15 +68,18 @@ Resolve the skill root before reading a bundled file or running a bundled script
 
 ## Non-negotiable contract
 
-- Keep exactly one versioned document for an EPIC: `docs/epics/EPIC-NNN-name.md` or the repository's equivalent.
-- Consume the temporary source specification into that document. Do not archive a second source file elsewhere in `docs/`.
+- During `prepare` and `refine`, create or edit exactly one working EPIC at `tmp/EPIC-NNN-name.md`. Do not create, copy, stage, or modify its final `docs/epics/` document, its `docs/epic-index.md` entry, or any GitHub issue.
+- Cross the repository publication boundary only in `publish`, after explicit approval of both coverage and exact writes: create or reuse the GitHub issues, move the approved working EPIC from `tmp/` to `docs/epics/EPIC-NNN-name.md`, and update `docs/epic-index.md`. `resume` may finish this sequence only when an approved publication already started.
+- After publication, keep exactly one versioned document for an EPIC at `docs/epics/EPIC-NNN-name.md`; the working copy must no longer remain under `tmp/`.
+- Keep `docs/epic-index.md` limited to published EPICs. Keep future work without a published document or issue in the repository's backlog authority, such as GitHub Projects or `docs/epic-backlog.md`, never mixed into the index.
+- Consume the temporary source specification into the working EPIC, then publish that document. Do not archive the source as a second file under `docs/`.
 - Preserve all source information. Never replace the specification with a summary and then discard the source.
 - Classify each coherent specification block as `context` or `operational`.
 - Route every `operational` block to the EPIC issue, at least one story issue, or both. Copy its substantive text into every mapped issue; a link or identifier alone is insufficient.
 - Allow `context` blocks to remain only in the EPIC document, but classify that choice explicitly.
 - Keep issue state in GitHub and full context in the EPIC document. When implementation scope changes later, update the issue; when design or rationale changes, amend the EPIC document too.
 - Never leave an issue dependent on a path under `tmp/` or another ignored directory.
-- Call the versioned artifact an EPIC document, plan, or snapshot. Do not label it a draft.
+- Call both the working and versioned artifacts an EPIC document, plan, or snapshot. Do not label either one a draft.
 - Format every Markdown file created or edited by the workflow with the repository's Prettier configuration and require both Prettier and markdownlint checks to pass before declaring it complete. This includes the EPIC document and temporary issue-body files.
 - Read and obey repository guidance before choosing labels, branches, commit messages, API commands, required checks, or documentation locations.
 - Never create or mutate remote issues, branches, or pull requests before an exact user checkpoint.
@@ -87,10 +90,10 @@ Resolve the skill root before reading a bundled file or running a bundled script
 
 When no explicit operation was supplied, choose one mode from observable state:
 
-1. **Prepare** — a source specification exists, but no complete `EPIC-NNN-*.md` exists.
-2. **Refine** — an EPIC document exists locally but has not passed coverage review.
-3. **Publish** — the EPIC is approved and validated; GitHub issues or the repository PR are absent.
-4. **Resume** — some issues, the archived document, branch, or PR already exist. Reuse deterministic titles and identifiers; never duplicate them.
+1. **Prepare** — a source specification exists, but no complete working `tmp/EPIC-NNN-*.md` exists.
+2. **Refine** — a working EPIC exists under `tmp/` but has not passed coverage review.
+3. **Publish** — the working EPIC under `tmp/` is approved and validated, and no publication artifact exists yet.
+4. **Resume** — an approved publication started and some issues, the versioned document, branch, or PR already exist. Reuse deterministic titles and identifiers; never duplicate them.
 5. **Inspect** — the user asks to diagnose or improve an EPIC workflow. Analyze only unless changes are explicitly requested.
 
 If the EPIC number, name, source file, or repository is genuinely ambiguous, ask before writing. Do not infer a consequential identity.
@@ -101,11 +104,11 @@ Read the applicable repository guidance files, EPIC index, architecture document
 
 Read the declared source specification completely. If several files jointly define the specification, require the user to choose whether they form one EPIC; once chosen, consolidate all of them into the single EPIC document.
 
-Record the source paths only in the working notes. The final EPIC and its issues must reference the versioned EPIC path, never the temporary inputs.
+Record the source paths only in the working notes. Generated issues and the final EPIC must reference `docs/epics/EPIC-NNN-name.md`, never the temporary inputs or working EPIC path.
 
 ## 2. Build the single EPIC document
 
-Start from [assets/epic-template.md](assets/epic-template.md). Transform the source itself into the EPIC instead of writing a separate summary:
+Start from [assets/epic-template.md](assets/epic-template.md). Write the result to `tmp/EPIC-NNN-name.md`; when refining, edit that working document in place. Never place it under `docs/epics/` during this phase. Transform the source itself into the EPIC instead of writing a separate summary:
 
 1. Preserve its problem statement, functional behavior, technical design, constraints, edge cases, alternatives, decisions, open questions, evidence, and examples.
 2. Reorganize only when that improves execution clarity and does not erase distinctions.
@@ -139,11 +142,13 @@ The validator proves structure and routing consistency; it cannot prove semantic
 
 Require explicit approval. Do not retire the source specification or make external writes before approval.
 
-After approval, retire the temporary source only after confirming that the EPIC contains all of it and the user can recover the approved result. Report what was removed and how it is recoverable.
+Coverage approval makes the working EPIC eligible for publication; it does not publish it. For standalone `prepare` or `refine`, stop with the EPIC under `tmp/` and leave the source at its existing path. Do not create issues, move the EPIC, update `docs/epic-index.md`, or retire the source. `prepare-and-publish` may continue only by entering the publication flow below.
 
 ## 4. Publish idempotently
 
 Read [references/github-publication.md](references/github-publication.md) completely before any GitHub or git mutation. Follow the repository's transport and lifecycle rules when they are stricter.
+
+Enter this phase only for `publish`, for the publication half of `prepare-and-publish`, or to `resume` an approved publication that already crossed the boundary. For a new publication, require the approved input to be the working EPIC under `tmp/`. Never pre-stage the final EPIC or index change during preparation.
 
 Generate issue bodies from the approved EPIC:
 
@@ -151,11 +156,14 @@ Generate issue bodies from the approved EPIC:
 - Include every block mapped to a story under that story's applicable specification.
 - Preserve requirements, invariants, limits, failure behavior, and exclusions; do not compress away qualifiers.
 - Add the versioned EPIC link and issue relationships using the repository's required syntax.
+- Use native GitHub parent/sub-issue and dependency relationships when the repository and transport support them; keep GitHub authoritative for live progress and blocking state.
 - Rebuild previews after issue numbers become known.
 
 Use deterministic titles for idempotence. Detect existing EPIC, story, branch, and PR resources before creating anything. On partial failure, resume from remote state and verify bodies before patching.
 
-Archive only the approved EPIC document in the repository, update its issue link and the EPIC index, run the required documentation and repository gates, then commit, push, and open the PR. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
+After exact-write approval, create or reuse the GitHub issues and move only the approved EPIC document to `docs/epics/EPIC-NNN-name.md`. Update its issue link and `docs/epic-index.md`; when the index does not exist, create it from [assets/epic-index-template.md](assets/epic-index-template.md), adapt its language to the repository, link the heading to the versioned EPIC with a relative repository path, and resolve or remove every placeholder. Preserve an existing index's language and EPIC ordering; when creating a new one, list published EPICs newest first. Never add future work without a published document or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epic-backlog.md` from [assets/epic-backlog-template.md](assets/epic-backlog-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the final EPIC contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
+
+In every published index entry, use a dedicated `Stories` list to name every story by its stable identifier and title and link its GitHub issue directly. A numeric issue range, EPIC checklist, or link to the EPIC issue does not replace the complete story list. Reserve `Notes` for exceptions or context that does not belong to structured fields. Use the repository's controlled status vocabulary; when none exists, use only `Active`, `Blocked`, `Completed`, or `Cancelled`. While the EPIC remains active, omit the completion-only `Final verification`, `Findings`, and `Exit state` paragraphs from the template.
 
 ## 5. Resume and close
 
@@ -169,11 +177,26 @@ In resume mode:
 
 After the user confirms the documentation PR was merged, verify the merge, complete the repository's post-merge issue checklist, remove merged branches, and synchronize the base branch. Disclose missing checks or reviews instead of reconstructing evidence retroactively.
 
+Do not treat the documentation PR merge as completion of the EPIC itself. When remote evidence shows that every story and EPIC acceptance criterion is complete, preview the exact index and issue updates and require approval. Then set the index status and completion date, retain the complete linked `Stories` list, and add these evidence-backed paragraphs beneath `Notes`:
+
+- `Final verification` — summarize final acceptance evidence, required checks, and relevant test or review results.
+- `Findings` — record material discoveries, deviations, corrections, and follow-up work; write `None` when there were no findings.
+- `Exit state` — state what now exists, the boundaries that remain, and deferred or future scope without implying it was delivered.
+
+Keep each completion paragraph to at most three concise paragraphs or bullet points. Put full evidence in the versioned EPIC, GitHub issues, or pull requests and link it rather than duplicating an unbounded closure report in the index.
+
 ## Completion conditions
 
-Finish only when:
+Finish `prepare` or `refine` only when:
+
+- exactly one complete working EPIC exists under `tmp/` and the source remains recoverable at its existing path;
+- validation and the section-by-section coverage review completed, and the checkpoint identifies the working EPIC as unpublished;
+- no GitHub issue was created or mutated, no EPIC was placed under `docs/epics/`, and `docs/epic-index.md` was not changed.
+
+Finish `publish` or publication `resume` only when:
 
 - exactly one versioned EPIC document contains the complete source specification and execution plan;
+- that document is at `docs/epics/EPIC-NNN-name.md`, its `docs/epic-index.md` entry is current, and no working EPIC copy remains under `tmp/`;
 - every specification block appears once in the distribution table;
 - every operational block reaches at least one GitHub issue;
 - story mappings and `Applicable blocks` agree exactly;
@@ -182,8 +205,14 @@ Finish only when:
 - the documentation PR is open and verified, or post-merge cleanup is complete when the user confirmed a merge;
 - validation results and any remaining uncertainty are reported.
 
+When a `resume` operation closes the EPIC itself, additionally require the index entry's `Stories` list to name and link every story, record its completion status and date, and contain `Final verification`, `Findings`, and `Exit state` with no unresolved placeholders.
+
+Finish `help` or `inspect` without local or remote mutations.
+
 ## Resources
 
+- [assets/epic-backlog-template.md](assets/epic-backlog-template.md) — copy only when the repository uses a Markdown backlog and source backlog content exists.
+- [assets/epic-index-template.md](assets/epic-index-template.md) — copy and adapt only when publication must create a missing EPIC index.
 - [assets/epic-template.md](assets/epic-template.md) — copy and fill when preparing the single EPIC document.
 - [scripts/validate_epic.py](scripts/validate_epic.py) — validate structure, numbering, routing, and forbidden temporary references.
 - [references/github-publication.md](references/github-publication.md) — read before GitHub or git mutations.

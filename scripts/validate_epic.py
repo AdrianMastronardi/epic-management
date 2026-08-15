@@ -101,7 +101,7 @@ def validate(path: Path) -> list[str]:
     if PLACEHOLDER_RE.search(text):
         errors.append("document contains unresolved {{PLACEHOLDER}} values")
     if re.search(r"\bdrafts?\b", text, flags=re.IGNORECASE):
-        errors.append("versioned EPIC documents must not be labelled as drafts")
+        errors.append("EPIC documents must not be labelled as drafts")
 
     positions: list[int] = []
     for heading in REQUIRED_H2:

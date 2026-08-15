@@ -32,11 +32,16 @@ Keep the change focused. If a schema change requires corresponding template, val
 
 Every change must preserve these invariants:
 
-- One EPIC has exactly one versioned EPIC document.
+- One published EPIC has exactly one versioned EPIC document.
 - The EPIC document retains the complete functional and technical specification.
 - Every operational specification block reaches the EPIC issue, at least one story issue, or both.
 - GitHub issue bodies include the complete applicable text rather than only identifiers, summaries, or links.
 - No published artifact or issue depends on a file under `tmp/` or another ignored directory.
+- Preparation and refinement keep the working EPIC under `tmp/` without creating issues or modifying `docs/epics/` or `docs/epic-index.md`.
+- Publication alone may create issues, move the approved EPIC to `docs/epics/`, and update `docs/epic-index.md`; resumption may only continue an already-started approved publication.
+- Every published index entry links its versioned EPIC document and names and directly links every story issue in a dedicated `Stories` list.
+- Future work without a published document or issue remains outside the EPIC index.
+- Completed index entries include evidence-backed `Final verification`, `Findings`, and `Exit state` paragraphs.
 - Versioned EPIC artifacts are never labelled as drafts.
 - Remote mutations require an exact preview and explicit user approval.
 - Partial publication can resume without duplicating issues, branches, or pull requests.

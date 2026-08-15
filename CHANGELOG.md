@@ -14,6 +14,27 @@ Entries are grouped by area, in this fixed order. Sections with no entries for a
 
 Within each section, entries are sorted in case-insensitive alphabetical order by filename.
 
+## [0.1.1] - 2026-08-16
+
+### Skill
+
+- `references/github-publication.md`: requires a new publication to start from the approved working EPIC under `tmp/`, defines native GitHub relationships, and records the separated index and backlog requirements for active and completed EPICs.
+- `SKILL.md`: defines the lifecycle boundary, separates published index and future backlog state, requires direct document and story links, controls lifecycle statuses, and bounds completed-EPIC summaries.
+
+### Templates
+
+- `assets/epic-backlog-template.md`: provides an optional separate home for future EPICs without published documents or GitHub issues.
+- `assets/epic-index-template.md`: provides a generic published EPIC index with relative document links, controlled status, structured story links, exceptional notes, and bounded completion summaries.
+
+### Validation
+
+- `scripts/validate_epic.py`: makes draft-labelling diagnostics apply accurately to both working and versioned EPIC documents.
+
+### Documentation
+
+- `CONTRIBUTING.md`: adds the temporary-to-versioned publication boundary, index/backlog separation, and complete index-entry requirements to the project invariants.
+- `README.md`: documents the artifact lifecycle, index/backlog separation, native GitHub relationships, and active and completed index states.
+
 ## [0.1.0] - 2026-08-15
 
 Initial release of Epic Management, a cross-host skill for Codex and Claude Code that transforms a functional and technical specification into one self-contained, versioned EPIC document and a traceable set of GitHub issues without losing source information.
