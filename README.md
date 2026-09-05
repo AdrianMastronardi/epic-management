@@ -202,4 +202,4 @@ Licensed under the [MIT License](LICENSE).
 
 Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before making anything beyond a typo or small clarification.
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+See [CHANGELOG.md](CHANGELOG.md) for version history. Every released version is anchored by a signed, annotated `vX.Y.Z` Git tag, and the changelog links each release to its GitHub comparison.

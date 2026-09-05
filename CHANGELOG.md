@@ -14,6 +14,22 @@ Entries are grouped by area, in this fixed order. Sections with no entries for a
 
 Within each section, entries are sorted in case-insensitive alphabetical order by filename.
 
+## [Unreleased]
+
+## [0.2.2] - 2026-09-05
+
+Adopts signed, annotated Git tags as the immutable release points behind the changelog. Every released version now has a `vX.Y.Z` tag, version headings link to GitHub comparisons, and ongoing work returns to an empty Unreleased section after each release.
+
+### Documentation
+
+- `CHANGELOG.md`: adds the Unreleased section and tag-backed reference links for every version.
+- `CONTRIBUTING.md`: defines the release-cut sequence, including changelog rollover, validation, the release commit, signed tag creation, and publication of the branch and tag together.
+- `README.md`: identifies signed release tags and changelog comparisons as the project's version-history interface.
+
+### Infrastructure
+
+- Git tags: marks releases `v0.1.0` through `v0.2.2` with signed, annotated tags that point to their release commits.
+
 ## [0.2.1] - 2026-09-05
 
 Makes GitHub's native parent/sub-issue relationship part of the publication contract. Every story issue is now a direct ordered sub-issue of its EPIC; Markdown task lists, issue links, labels, milestones, and dependency edges no longer qualify as substitutes for that relationship.
@@ -126,3 +142,10 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.markdownlint-cli2.jsonc`: configures structural Markdown rules while preserving logical prose lines and manually maintained table diffs.
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
+
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/AdrianMastronardi/epic-management/releases/tag/v0.1.0

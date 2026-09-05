@@ -97,7 +97,17 @@ For changes to the native relationship protocol, verify the current `gh issue cr
 
 ## Changelog
 
-Update [CHANGELOG.md](CHANGELOG.md) for every user-visible change. Add the new version at the top and keep entries grouped and ordered according to the rules documented there.
+Update [CHANGELOG.md](CHANGELOG.md) for every user-visible change. Record ongoing work under `Unreleased`, and keep entries grouped and ordered according to the rules documented there.
+
+## Cutting a release
+
+A released changelog heading and its reference definition are two parts of the same link, backed by a signed, annotated Git tag named `vX.Y.Z`.
+
+1. Move the contents of `Unreleased` into a new `## [X.Y.Z] - YYYY-MM-DD` section and leave a fresh, empty `Unreleased` section above it.
+2. Change the former `Unreleased` reference to `[X.Y.Z]`, pointing it at `compare/vW.V.U...vX.Y.Z`, and add a new `Unreleased` reference pointing at `compare/vX.Y.Z...HEAD`. The oldest release points directly to `releases/tag/vX.Y.Z`.
+3. Run the complete validation suite and commit the release on the default branch.
+4. Create the release point with `git tag -s vX.Y.Z -m "Release X.Y.Z"`. Never move or replace a published release tag.
+5. Publish the branch and its signed tag together with `git push origin main --follow-tags`, then verify that the changelog links resolve.
 
 ## License
 
