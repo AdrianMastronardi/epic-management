@@ -14,6 +14,46 @@ Entries are grouped by area, in this fixed order. Sections with no entries for a
 
 Within each section, entries are sorted in case-insensitive alphabetical order by filename.
 
+## [0.2.0] - 2026-08-20
+
+Adopts [Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) as the storage format for EPIC knowledge. Published EPICs now live in a conformant knowledge bundle rooted at `docs/epics/`, where one EPIC is one concept directory holding an `epic.md` concept, one `Story` concept per story, and an index. Frontmatter records provenance with `sources`, authorship with `generated`, review with `verified`, document lifecycle with `status`, and execution lifecycle with `epic_status`, so the checkpoint approval this skill already required becomes a recorded human verification event rather than an untracked one.
+
+This release changes artifact paths and adds the `migrate` operation, which converts a legacy `docs/epic-index.md` and flat `docs/epics/EPIC-NNN-name.md` layout into the bundle after an exact-write preview and without touching GitHub. Story concepts link their specification blocks instead of duplicating them, while generated GitHub issue bodies still embed the complete applicable text.
+
+### Skill
+
+- `agents/openai.yaml`: advertises the new `migrate` operation.
+- `references/github-publication.md`: publishes into the bundle, assigns the frontmatter that publication owns, updates the bundle index, resolves story block links into complete issue text, and requires both validators before commit.
+- `references/okf-bundle.md`: defines the OKF format contract for EPIC artifacts, including bundle layout, concept types, frontmatter families, the actor convention, trust events, source and link policy, the restricted YAML style, index structure, history through git rather than a log file, conformance, and the legacy migration map.
+- `SKILL.md`: replaces the single-document artifact model with the OKF concept directory, adds the `migrate` operation and mode, records `generated` and `verified` at the moments they actually occur, separates `status` from `epic_status`, moves per-EPIC metadata out of the index and into the concept, leaves history to git instead of a bundle log, and requires bundle validation before publication completes.
+
+### Templates
+
+- `assets/backlog-concept-template.md`: replaces `assets/epic-backlog-template.md` with an `EPIC Backlog` concept carrying OKF frontmatter.
+- `assets/bundle-index-template.md`: provides the bundle-root index, declaring `okf_version` and grouping published EPICs by execution status without linking optional concepts that have not been created.
+- `assets/epic-backlog-template.md`: removed in favor of `assets/backlog-concept-template.md`.
+- `assets/epic-concept-template.md`: replaces `assets/epic-template.md` with a working `type: EPIC` concept whose title, provenance, lifecycle, and story index live in frontmatter and whose body holds the specification blocks and distribution table; publication-owned resource and human-verification fields remain absent until publication.
+- `assets/epic-index-template.md`: becomes the per-EPIC directory index listing the EPIC concept and its story concepts.
+- `assets/epic-template.md`: removed in favor of `assets/epic-concept-template.md`.
+- `assets/story-concept-template.md`: provides a working `type: Story` concept with `applicable_blocks` frontmatter and an applicable specification section that links its blocks in the EPIC concept, leaving publication-owned resource and human-verification fields absent until publication.
+
+### Validation
+
+- `scripts/okf.py`: adds shared OKF frontmatter parsing and checks, using PyYAML when importable and a strict parser for the documented subset otherwise, keeping both parsers aligned on quoted leading-zero identifiers, and providing reusable actor, calendar date, trust, lifecycle, source, footnote, and hygiene validation.
+- `scripts/validate_epic.py`: validates an EPIC concept directory rather than a single file, checking frontmatter families, lifecycle values against the working or published stage, bounded story concept paths, story metadata and resources against the EPIC index, exact specification-link agreement, story numbering and file presence, the directory index, footnote attribution, link targets, and completion requirements.
+- `scripts/validate_okf_bundle.py`: adds OKF v0.2 conformance validation for the whole bundle, accepting normalized relative root links, separating hard failures from the tolerances OKF grants consumers, checking any independently maintained `log.md` it finds without requiring one, and offering `--strict`.
+- `tests/test_validators.py`: covers valid working and published bundles with PyYAML and the fallback parser plus regressions for concept containment, metadata projection, parser parity, real dates, optional index links, and normalized root links.
+
+### Documentation
+
+- `CHANGELOG.md`: documents the OKF adoption release.
+- `CONTRIBUTING.md`: restates the project invariants around the bundle, conformance, evidence-based provenance, the two lifecycle axes, and lossless migration, and requires exercising both validators with and without PyYAML.
+- `README.md`: documents the bundle model, the `migrate` operation, the recorded provenance and trust guarantees, git as the bundle's history, both validation commands, and the new package structure.
+
+### Infrastructure
+
+- `.gitignore`: keeps the bytecode cache produced by the shared validator module out of version control.
+
 ## [0.1.1] - 2026-08-16
 
 ### Skill

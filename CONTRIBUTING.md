@@ -19,7 +19,7 @@ Contributions that probably do not fit include:
 - Story implementation or project-specific business logic.
 - Generic issue triage or backlog prioritization unrelated to EPIC creation.
 - Host-specific behavior that breaks the other supported host.
-- Additional versioned specification files that duplicate the EPIC document.
+- Additional published files that duplicate the specification already held by the EPIC concept.
 - Publication shortcuts that bypass exact previews or explicit approval.
 
 ## Before opening a pull request
@@ -32,17 +32,22 @@ Keep the change focused. If a schema change requires corresponding template, val
 
 Every change must preserve these invariants:
 
-- One published EPIC has exactly one versioned EPIC document.
-- The EPIC document retains the complete functional and technical specification.
+- One published EPIC has exactly one EPIC concept directory at `docs/epics/EPIC-NNN-name/`.
+- The EPIC concept retains the complete functional and technical specification, and story concepts link those blocks instead of copying them.
 - Every operational specification block reaches the EPIC issue, at least one story issue, or both.
 - GitHub issue bodies include the complete applicable text rather than only identifiers, summaries, or links.
 - No published artifact or issue depends on a file under `tmp/` or another ignored directory.
-- Preparation and refinement keep the working EPIC under `tmp/` without creating issues or modifying `docs/epics/` or `docs/epic-index.md`.
-- Publication alone may create issues, move the approved EPIC to `docs/epics/`, and update `docs/epic-index.md`; resumption may only continue an already-started approved publication.
-- Every published index entry links its versioned EPIC document and names and directly links every story issue in a dedicated `Stories` list.
-- Future work without a published document or issue remains outside the EPIC index.
-- Completed index entries include evidence-backed `Final verification`, `Findings`, and `Exit state` paragraphs.
-- Versioned EPIC artifacts are never labelled as drafts.
+- Preparation and refinement keep the working EPIC directory under `tmp/` without creating issues or writing anything inside `docs/epics/`.
+- Publication alone may create issues, move the approved directory into `docs/epics/`, and update the bundle index; resumption may only continue an already-started approved publication.
+- The bundle stays conformant with OKF v0.2: every concept carries parseable frontmatter with a non-empty `type`, and the reserved filenames `index.md` and `log.md` keep their defined structure and are never concepts.
+- This workflow never creates or updates `log.md`: git is its history, and every commit that publishes, closes, deprecates, or migrates an EPIC names that EPIC in its subject line. A repository may maintain an OKF log independently.
+- Provenance and trust are recorded from real evidence: `sources` names actual material, `generated` names the acting agent and clock, and a `human:<id>` verifier is added only at a real approval checkpoint.
+- OKF `status` records the document lifecycle and `epic_status` records the execution lifecycle; the two are never collapsed.
+- Every published index entry links its EPIC concept directory, and per-EPIC issue links, dates, story links, and closure evidence live in the concept rather than the index.
+- Future work without a published concept or issue remains outside the EPIC index.
+- Completed EPIC concepts include evidence-backed `## Final verification`, `## Findings`, and `## Exit state` sections.
+- Published concepts are never labelled as drafts, and `status: draft` marks working concepts under `tmp/` only.
+- Migration converts a legacy layout losslessly, updates in-repository references to moved paths, and never touches GitHub.
 - Remote mutations require an exact preview and explicit user approval.
 - Partial publication can resume without duplicating issues, branches, or pull requests.
 - Codex and Claude Code remain supported through their native invocation syntax.
@@ -64,14 +69,18 @@ If formatting is required, run Prettier with `--write`, review the resulting dif
 
 ## Testing changes
 
-Run the structural skill validator supplied by your Codex installation against the skill directory. Also compile and exercise the bundled EPIC validator:
+Run the structural skill validator supplied by your Codex installation against the skill directory. Also compile and exercise both bundled validators:
 
 ```sh
-python3 -m py_compile scripts/validate_epic.py
-python3 scripts/validate_epic.py path/to/EPIC-NNN-name.md
+python3 -m py_compile scripts/okf.py scripts/validate_epic.py scripts/validate_okf_bundle.py
+python3 -m unittest discover -s tests
+python3 scripts/validate_epic.py path/to/EPIC-NNN-name
+python3 scripts/validate_okf_bundle.py path/to/docs/epics
 ```
 
-Use a complete EPIC fixture that covers both `context` and `operational` blocks, `DOCUMENT`, `EPIC`, and story destinations. Add focused invalid fixtures when changing a validation rule and confirm that each one fails for the intended reason.
+Use a complete bundle fixture with an EPIC that covers both `context` and `operational` blocks, `DOCUMENT`, `EPIC`, and story destinations, in both the working and published stages. Add focused invalid fixtures when changing a validation rule and confirm that each one fails for the intended reason.
+
+Exercise the frontmatter parser with and without PyYAML installed, since the validators must agree in both environments.
 
 For invocation changes, verify at minimum:
 
