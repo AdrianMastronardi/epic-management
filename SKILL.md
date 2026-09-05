@@ -1,6 +1,6 @@
 ---
 name: epic-management
-description: Create, refine, validate, publish, migrate, inspect, or resume product EPICs as Open Knowledge Format bundles with traceable GitHub stories. Use when a user invokes epic-management; wants to turn a functional and technical specification into an EPIC; wants to create, publish, migrate, inspect, or resume an EPIC and its story issues; or needs to repair an EPIC workflow. Preparation stays under tmp/ and only approved publication may create GitHub issues or write the docs/epics bundle. Preserve all source information, route every operational specification block to the EPIC or stories, and never implement story code.
+description: Create, refine, validate, publish, migrate, inspect, or resume product EPICs as Open Knowledge Format bundles whose GitHub story issues are native sub-issues of the EPIC. Use when a user invokes epic-management; wants to turn a functional and technical specification into an EPIC; wants to create, publish, migrate, inspect, or resume an EPIC and its stories; or needs to repair an EPIC workflow. Preparation stays under tmp/ and only approved publication may create GitHub issues or write the docs/epics bundle. Preserve all source information, route every operational specification block to the EPIC or stories, and never implement story code.
 ---
 
 # Epic Management
@@ -100,6 +100,8 @@ tmp/EPIC-NNN-name/                     docs/epics/
 - Route every `operational` block to the EPIC issue, at least one story issue, or both. Copy its substantive text into every mapped issue; a link or identifier alone is insufficient.
 - Allow `context` blocks to remain only in the EPIC concept, but classify that choice explicitly.
 - Keep issue state in GitHub and full context in the bundle. Story concepts record the durable definition of the work and never mirror progress, assignee, or blocking state. When implementation scope changes later, update the issue; when design or rationale changes, amend the concept too.
+- Make every story issue a direct native GitHub sub-issue of the EPIC issue. A Markdown task list, issue link, label, milestone, or dependency edge is not a substitute. Parentage expresses decomposition; `blocked by` and `blocking` express only explicit execution dependencies.
+- Treat a story that already has another parent as a conflict. Never reparent it without a separate exact preview and explicit approval naming both parents.
 - Write real frontmatter. Take timestamps from the clock, derive actors from the active host and the repository git identity, and never invent a model name, a human identifier, or a verification event.
 - Add a `human:<id>` entry to `verified` only when the user has actually approved that content at a checkpoint.
 - Use OKF `status` for the document lifecycle and `epic_status` for the execution lifecycle, and never collapse them. A published concept is `status: stable`; only `tmp/` carries `status: draft`.
@@ -177,7 +179,7 @@ On approval, append `verified: { by: human:<id>, at: <now> }` to `epic.md` and t
 
 ## 4. Publish idempotently
 
-Read [references/github-publication.md](references/github-publication.md) completely before any GitHub or git mutation. Follow the repository's transport and lifecycle rules when they are stricter.
+Read [references/github-publication.md](references/github-publication.md) and [references/github-sub-issues.md](references/github-sub-issues.md) completely before any GitHub or git mutation. Follow the repository's transport and lifecycle rules when they are stricter.
 
 Enter this phase only for `publish`, for the publication half of `prepare-and-publish`, or to `resume` an approved publication that already crossed the boundary. For a new publication, require the approved input to be the working directory under `tmp/`. Never pre-stage anything inside `docs/epics/` during preparation.
 
@@ -187,10 +189,10 @@ Generate issue bodies from the approved concepts:
 - Include every block mapped to a story under that story's applicable specification, resolving the link into the complete block text.
 - Preserve requirements, invariants, limits, failure behavior, and exclusions; do not compress away qualifiers.
 - Add the published concept link and issue relationships using the repository's required syntax.
-- Use native GitHub parent/sub-issue and dependency relationships when the repository and transport support them; keep GitHub authoritative for live progress and blocking state.
+- Create every story as a direct native sub-issue of the EPIC, keep native order aligned with `epic.md`, and model only explicit execution constraints as dependencies. If the target host exposes no native sub-issue transport, stop rather than degrading to Markdown checklists or links.
 - Rebuild previews after issue numbers become known.
 
-Use deterministic titles for idempotence. Detect existing EPIC, story, branch, and PR resources before creating anything. On partial failure, resume from remote state and verify bodies before patching.
+Use deterministic titles for idempotence. Detect existing EPIC, story, parent/sub-issue, dependency, branch, and PR state before creating anything. On partial failure, resume from remote state and verify bodies and relationships before patching.
 
 After exact-write approval, create or reuse the GitHub issues and move the approved directory to `docs/epics/EPIC-NNN-name/`. Then set `status: stable` on every concept, write each issue URL into the EPIC's `resource`, each `stories[].resource`, and each story concept's `resource`, and update the bundle. When `docs/epics/index.md` does not exist, create it from [assets/bundle-index-template.md](assets/bundle-index-template.md), adapt its language to the repository, and resolve or remove every placeholder. Add the EPIC to the index group matching its `epic_status`, newest first. Preserve an existing index's language and ordering. Never add future work without a published concept or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epics/backlog.md` from [assets/backlog-concept-template.md](assets/backlog-concept-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the published concept contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
 
@@ -256,6 +258,7 @@ Finish `publish` or publication `resume` only when:
 - every published concept carries `status: stable`, a `resource` issue URL, and a human `verified` entry;
 - no issue or published file depends on `tmp/`;
 - all requested issues exist once with correct relationships and labels;
+- the EPIC's native sub-issue set and order exactly match `stories`, and every story reports that EPIC as its parent;
 - the documentation PR is open and verified, or post-merge cleanup is complete when the user confirmed a merge;
 - validation results and any remaining uncertainty are reported.
 
@@ -274,5 +277,6 @@ Finish `help` or `inspect` without local or remote mutations.
 - [assets/story-concept-template.md](assets/story-concept-template.md) — copy and fill for each story concept.
 - [references/okf-bundle.md](references/okf-bundle.md) — read before creating, editing, validating, or migrating any EPIC artifact.
 - [references/github-publication.md](references/github-publication.md) — read before GitHub or git mutations.
+- [references/github-sub-issues.md](references/github-sub-issues.md) — read before creating, attaching, ordering, reparenting, or verifying story issues.
 - [scripts/validate_epic.py](scripts/validate_epic.py) — validate one EPIC concept directory, working or published.
 - [scripts/validate_okf_bundle.py](scripts/validate_okf_bundle.py) — validate the whole bundle against OKF v0.2.

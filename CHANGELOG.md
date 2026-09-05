@@ -14,6 +14,22 @@ Entries are grouped by area, in this fixed order. Sections with no entries for a
 
 Within each section, entries are sorted in case-insensitive alphabetical order by filename.
 
+## [0.2.1] - 2026-09-05
+
+Makes GitHub's native parent/sub-issue relationship part of the publication contract. Every story issue is now a direct ordered sub-issue of its EPIC; Markdown task lists, issue links, labels, milestones, and dependency edges no longer qualify as substitutes for that relationship.
+
+### Skill
+
+- `references/github-publication.md`: separates native parentage from blocking dependencies, includes current-parent and native-priority state in previews, creates new stories with their parent when possible, and requires bidirectional relationship readback before publication or closure completes.
+- `references/github-sub-issues.md`: defines the native relationship model, GitHub CLI, REST, and GraphQL transports, capability and permission preflight, idempotent attachment, transport-specific ID handling, conflict-safe reparenting, priority reconciliation, closure proof, and partial-failure recovery.
+- `SKILL.md`: requires every story to be a direct native sub-issue of the EPIC, rejects checklist degradation and implicit reparenting, and adds exact sub-issue set and ordering to completion conditions.
+
+### Documentation
+
+- `CHANGELOG.md`: documents the native Sub-issues release.
+- `CONTRIBUTING.md`: adds parentage, priority, dependency separation, conflict handling, and read-only relationship verification to the project invariants.
+- `README.md`: explains the native issue hierarchy and routes users to the detailed GitHub Sub-issues protocol.
+
 ## [0.2.0] - 2026-08-20
 
 Adopts [Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) as the storage format for EPIC knowledge. Published EPICs now live in a conformant knowledge bundle rooted at `docs/epics/`, where one EPIC is one concept directory holding an `epic.md` concept, one `Story` concept per story, and an index. Frontmatter records provenance with `sources`, authorship with `generated`, review with `verified`, document lifecycle with `status`, and execution lifecycle with `epic_status`, so the checkpoint approval this skill already required becomes a recorded human verification event rather than an untracked one.

@@ -1,6 +1,6 @@
 # Epic Management
 
-A cross-host skill for turning functional and technical specifications into complete product EPICs and traceable GitHub stories, stored as an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) knowledge bundle, without losing source information.
+A cross-host skill for turning functional and technical specifications into complete product EPICs with native GitHub sub-issues and an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) knowledge bundle, without losing source information.
 
 Epic Management works with Codex and Claude Code. It prepares and refines one self-contained EPIC concept directory under `tmp/`, then publication projects the relevant portions into executable issues, moves the approved directory into the `docs/epics/` bundle, and updates the bundle index.
 
@@ -20,6 +20,8 @@ Epic Management prevents that loss by transforming the complete specification in
 - A new EPIC does not enter version control during `prepare` or `refine`; both operations keep it under `tmp/` and do not create issues.
 - Only approved publication creates GitHub issues, moves the EPIC into `docs/epics/`, and updates the bundle index.
 - Publication requires an exact preview and explicit approval, and partial runs resume without duplication.
+- Every story issue is a direct native GitHub sub-issue of the EPIC; Markdown task lists and dependency edges never stand in for parentage.
+- Native child order follows the ordered `stories` list, while `blocked by` and `blocking` record only explicit execution dependencies.
 - Provenance and trust are recorded, never invented: `sources` names the material, `generated` names the agent that wrote it, and `verified` gains a `human:<id>` entry only at a real approval checkpoint.
 - Published concepts are never labelled as drafts; `status: draft` marks working concepts under `tmp/` and nothing else.
 - The skill manages the backlog but never implements its stories.
@@ -85,8 +87,8 @@ A bare invocation shows help and performs no repository reads, GitHub access, or
 2. Run `prepare` to transform that source into one complete working EPIC directory under `tmp/`.
 3. Review the coverage checkpoint, including every source section, block classification, issue destination, exclusion, open decision, and the identity that will be recorded as verifier.
 4. Approve the checkpoint only when the EPIC preserves the complete source and the proposed issue routing is correct.
-5. Run `publish`, or continue `prepare-and-publish`, to preview the exact issues and repository writes.
-6. Approve the writes, then let the skill create or reuse GitHub resources, move the directory into `docs/epics/`, update the bundle index, and open the documentation pull request.
+5. Run `publish`, or continue `prepare-and-publish`, to preview the exact issues, native parent/sub-issue actions, dependency edges, and repository writes.
+6. Approve the writes, then let the skill create or reuse GitHub resources, attach every story as a direct sub-issue, move the directory into `docs/epics/`, update the bundle index, and open the documentation pull request.
 7. After a human merges the pull request, run `resume` to verify the merge and complete safe post-merge cleanup.
 
 The skill reads and obeys repository-specific guidance for language, labels, GitHub transport, protected branches, commits, checks, and pull-request lifecycle.
@@ -111,7 +113,18 @@ Each coherent source block receives a stable `SPEC-NNN-SSS` identifier and one r
 
 Issue links, dates, story links, notes, and closure evidence live in the EPIC concept's frontmatter and body. The bundle index stays a lightweight listing grouped by `epic_status`, which is what makes it a conformant OKF index rather than a second record of the same facts.
 
-When supported, the EPIC issue is the native parent of its story sub-issues and explicit blocking relationships use GitHub dependencies. GitHub remains authoritative for live progress and blocking state; the bundle preserves the durable definition, navigation, and historical traceability.
+The GitHub issue hierarchy is deliberately shallow:
+
+```text
+EPIC-NNN issue
+├── STORY-NNN-001 issue  (native sub-issue)
+├── STORY-NNN-002 issue  (native sub-issue)
+└── STORY-NNN-003 issue  (native sub-issue)
+```
+
+Each story remains an independent issue, but the EPIC owns it through GitHub's native parent/sub-issue relation. That relation drives GitHub's progress summary and project hierarchy. It is distinct from a Markdown checkbox and from a dependency: parentage means “part of this EPIC,” while `blocked by` means “cannot proceed until this issue changes.” The skill reads both directions back, reconciles native priority with `epic.md`, and refuses to move a story from another parent without a separate explicit approval. See [references/github-sub-issues.md](references/github-sub-issues.md) for the CLI, REST fallback, conflict, ordering, and recovery protocol.
+
+GitHub remains authoritative for live progress, parentage, and blocking state; the bundle preserves the durable definition, navigation, and historical traceability.
 
 This workflow creates and updates no `log.md`. OKF makes it optional and recommends shipping a bundle as a git repository because git already supplies history, attribution, and diffs, so the repository's history is the bundle's history. Every commit that publishes, closes, deprecates, or migrates an EPIC names its identifier in the subject line. The trade-off is that this history does not travel if the bundle is exported as a tarball; a repository that needs portable history may maintain a `log.md` independently, which the validator checks when it finds one.
 
@@ -168,6 +181,7 @@ epic-management/
 │   └── story-concept-template.md  # canonical Story concept
 ├── references/
 │   ├── github-publication.md  # approval-gated publication protocol
+│   ├── github-sub-issues.md  # native parent/sub-issue protocol
 │   └── okf-bundle.md  # OKF format contract for EPIC artifacts
 ├── scripts/
 │   ├── okf.py  # shared OKF frontmatter parsing and checks

@@ -39,6 +39,8 @@ Every change must preserve these invariants:
 - No published artifact or issue depends on a file under `tmp/` or another ignored directory.
 - Preparation and refinement keep the working EPIC directory under `tmp/` without creating issues or writing anything inside `docs/epics/`.
 - Publication alone may create issues, move the approved directory into `docs/epics/`, and update the bundle index; resumption may only continue an already-started approved publication.
+- Every story issue is a direct native sub-issue of its EPIC issue, and native priority matches the ordered `stories` list. A Markdown task list, link, label, milestone, or dependency edge is not equivalent parentage.
+- Parent/sub-issue relationships express EPIC decomposition; `blocked by` and `blocking` express only explicit execution dependencies. A story already parented elsewhere is a conflict and requires a separate approved reparenting preview.
 - The bundle stays conformant with OKF v0.2: every concept carries parseable frontmatter with a non-empty `type`, and the reserved filenames `index.md` and `log.md` keep their defined structure and are never concepts.
 - This workflow never creates or updates `log.md`: git is its history, and every commit that publishes, closes, deprecates, or migrates an EPIC names that EPIC in its subject line. A repository may maintain an OKF log independently.
 - Provenance and trust are recorded from real evidence: `sources` names actual material, `generated` names the acting agent and clock, and a `human:<id>` verifier is added only at a real approval checkpoint.
@@ -90,6 +92,8 @@ For invocation changes, verify at minimum:
 - Missing and unknown operations fail closed without mutations.
 
 Do not test publication against live GitHub resources unless the test scope, exact writes, and cleanup plan were explicitly approved.
+
+For changes to the native relationship protocol, verify the current `gh issue create`, `gh issue edit`, and `gh issue view` capabilities plus the official REST Sub-issues contract. When an approved live fixture is available, read the parent and child directions back and test idempotent resume after a partial attachment; otherwise keep the verification read-only.
 
 ## Changelog
 
