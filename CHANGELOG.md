@@ -16,6 +16,19 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-09-24
+
+### Skill
+
+- `references/github-publication.md`: requires issue previews to retain implementation decisions, rationale, and verification details and pass an independent-agent review.
+- `references/implementation-handoff.md`: defines how to capture implementation intent from discussion and repository evidence, distinguish decision status, route shared design, and assess readiness without the original conversation.
+- `SKILL.md`: requires preparation and refinement to preserve the intended implementation and review each story for independent execution before publication.
+
+### Templates
+
+- `assets/epic-concept-template.md`: prompts for implementation approach, starting points, contracts, rationale, verification, and unresolved decisions within specification blocks.
+- `assets/story-concept-template.md`: prompts for ordered implementation steps, scope boundaries, concrete acceptance scenarios, and specific verification checks.
+
 ## [0.2.2] - 2026-09-05
 
 Adopts signed, annotated Git tags as the immutable release points behind the changelog. Every released version now has a `vX.Y.Z` tag, version headings link to GitHub comparisons, and ongoing work returns to an empty Unreleased section after each release.
@@ -143,7 +156,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.1.1...v0.2.0

@@ -17,6 +17,7 @@ Cross that boundary only after the exact-write checkpoint is approved. `resume` 
 - Confirm that the working tree is clean or that every existing change is understood and preserved.
 - Confirm that the EPIC number and deterministic titles do not collide with unrelated resources.
 - Confirm that no generated body refers to `tmp/`.
+- Confirm that the issue-body previews pass the independent-agent review in [implementation-handoff.md](implementation-handoff.md), including decisions added or changed during refinement.
 - Confirm that a native sub-issue transport is available and record which CLI or API path publication will use. Do not probe write permission with an unapproved mutation.
 - Detect the layout. When the repository still uses the legacy flat layout, migrate it first under the `migrate` protocol in `SKILL.md`, or fold the migration into this exact-write preview with the user's approval.
 
@@ -38,13 +39,15 @@ Construct each story body from:
 
 - the story concept's description;
 - an `Applicable specification` section containing the complete text of every block named in the story's `applicable_blocks`;
-- tasks;
+- ordered implementation tasks, with starting points and prerequisite outputs where relevant;
 - story acceptance criteria;
 - quality checklist;
 - the relation to the EPIC issue;
 - a link to the published EPIC concept.
 
 The story concept links its blocks instead of copying them, which is correct inside the bundle and wrong in an issue. Resolve every such link into full text when generating a body. Do not replace applicable specification text with IDs, summaries, or links. Preserve negations, units, bounds, failure behavior, edge cases, and explicit exclusions.
+
+Include the intended implementation approach, decision rationale and status, and concrete verification details from the approved concepts. Shared design required by a story must be routed to and embedded in that story, even when it also appears in the EPIC body. A new agent must not need the preparation conversation or the parent issue to reconstruct the plan.
 
 If a body would exceed the platform limit, stop and redesign the story boundaries or obtain explicit approval for another lossless representation. Never truncate.
 

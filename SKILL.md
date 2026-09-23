@@ -96,6 +96,7 @@ tmp/EPIC-NNN-name/                     docs/epics/
 - Keep `docs/epics/index.md` limited to published EPICs. Keep future work without a published concept or issue in the repository's backlog authority, such as GitHub Projects or `docs/epics/backlog.md`, never mixed into the index.
 - Consume the temporary source specification into the EPIC concept and record it in `sources`. Do not archive the source as a second document under `docs/`.
 - Preserve all source information. Never replace the specification with a summary and then discard the source.
+- Preserve implementation decisions and their rationale from preparation and refinement, including the conversation. Each issue must let an independent agent understand both the outcome and the intended implementation without access to that conversation.
 - Classify each coherent specification block as `context` or `operational`.
 - Route every `operational` block to the EPIC issue, at least one story issue, or both. Copy its substantive text into every mapped issue; a link or identifier alone is insufficient.
 - Allow `context` blocks to remain only in the EPIC concept, but classify that choice explicitly.
@@ -134,6 +135,8 @@ Detect the layout before writing anything. When `docs/epics/index.md` declares `
 
 Read the declared source specification completely. If several files jointly define the specification, require the user to choose whether they form one EPIC; once chosen, consolidate all of them into the single EPIC concept.
 
+Capture relevant decisions from the available conversation as additional source material. Inspect the repository paths and existing patterns needed to ground the implementation approach. Distinguish observed code from proposed changes; do not invent code locations or recover missing discussion by guessing.
+
 Record the source paths only in the working notes. Published concepts and generated issues must reference `docs/epics/EPIC-NNN-name/`, never the temporary inputs or the working path.
 
 ## 2. Build the EPIC concept directory
@@ -153,6 +156,8 @@ Start from [assets/epic-concept-template.md](assets/epic-concept-template.md), [
 
 Use stable IDs for traceability, not as substitutes for prose. A story concept may reference a block by ID and link, but generated GitHub bodies must include the full applicable text.
 
+Apply [references/implementation-handoff.md](references/implementation-handoff.md) during preparation and refinement. Store the intended approach and decision rationale in operational specification blocks, route them to every affected story, and turn them into ordered story tasks without duplicating the specification in the bundle.
+
 ## 3. Prove coverage and checkpoint
 
 Run the bundled validator with actual resolved paths; never pass an angle-bracket placeholder literally:
@@ -162,12 +167,14 @@ Run the bundled validator with actual resolved paths; never pass an angle-bracke
 
 Replace `<epic-directory>` and, in Codex, `<resolved-skill-root>` before execution.
 
-The validator proves structure, frontmatter, and routing consistency; it cannot prove semantic completeness. Perform a section-by-section comparison against the source and present a checkpoint containing:
+The validator proves structure, frontmatter, and routing consistency; it cannot prove semantic completeness or implementation readiness. Perform a section-by-section comparison against the source and the independent-agent review in [references/implementation-handoff.md](references/implementation-handoff.md), then present a checkpoint containing:
 
 - every source section and its destination block;
 - every block's `context` or `operational` classification;
 - every GitHub destination for operational blocks;
 - all exclusions, open decisions, and deferred work;
+- the intended implementation approach and rationale for each story, distinguishing agreed decisions, proposals, and implementation discretion;
+- the independent-agent review result, including any missing context or decisions that block implementation;
 - any wording that was merged, split, or materially rewritten;
 - the proposed EPIC and story titles with labels;
 - the `sources` entries and the human identifier that will be recorded as the verifier;
@@ -188,6 +195,7 @@ Generate issue bodies from the approved concepts:
 - Include global operational blocks mapped to `EPIC` in the EPIC body.
 - Include every block mapped to a story under that story's applicable specification, resolving the link into the complete block text.
 - Preserve requirements, invariants, limits, failure behavior, and exclusions; do not compress away qualifiers.
+- Preserve implementation approach, rationale, decision status, and verification details; review the rendered issue bodies for independent implementation before the exact-write checkpoint.
 - Add the published concept link and issue relationships using the repository's required syntax.
 - Create every story as a direct native sub-issue of the EPIC, keep native order aligned with `epic.md`, and model only explicit execution constraints as dependencies. If the target host exposes no native sub-issue transport, stop rather than degrading to Markdown checklists or links.
 - Rebuild previews after issue numbers become known.
@@ -245,6 +253,7 @@ Finish `prepare` or `refine` only when:
 
 - exactly one complete working EPIC directory exists under `tmp/` and the source remains recoverable at its existing path;
 - `validate_epic.py` passes and the section-by-section coverage review completed, and the checkpoint identifies the working EPIC as unpublished;
+- the independent-agent review passes; unresolved implementation blockers remain in refinement rather than being presented as ready work;
 - no GitHub issue was created or mutated and nothing under `docs/epics/` was changed.
 
 Finish `publish` or publication `resume` only when:
@@ -254,6 +263,7 @@ Finish `publish` or publication `resume` only when:
 - `validate_epic.py` passes for the published directory and `validate_okf_bundle.py` passes for `docs/epics`;
 - every specification block appears once in the distribution table;
 - every operational block reaches at least one GitHub issue;
+- every story issue includes the applicable implementation decisions, rationale, ordered tasks, and verification details needed to pass the independent-agent review;
 - story mappings and `applicable_blocks` agree exactly;
 - every published concept carries `status: stable`, a `resource` issue URL, and a human `verified` entry;
 - no issue or published file depends on `tmp/`;
@@ -276,6 +286,7 @@ Finish `help` or `inspect` without local or remote mutations.
 - [assets/epic-index-template.md](assets/epic-index-template.md) — copy and fill for each EPIC directory's index.
 - [assets/story-concept-template.md](assets/story-concept-template.md) — copy and fill for each story concept.
 - [references/okf-bundle.md](references/okf-bundle.md) — read before creating, editing, validating, or migrating any EPIC artifact.
+- [references/implementation-handoff.md](references/implementation-handoff.md) — read during preparation, refinement, and issue-body review to preserve the intended implementation for an independent agent.
 - [references/github-publication.md](references/github-publication.md) — read before GitHub or git mutations.
 - [references/github-sub-issues.md](references/github-sub-issues.md) — read before creating, attaching, ordering, reparenting, or verifying story issues.
 - [scripts/validate_epic.py](scripts/validate_epic.py) — validate one EPIC concept directory, working or published.

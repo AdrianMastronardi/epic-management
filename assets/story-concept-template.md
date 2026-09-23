@@ -13,7 +13,7 @@ applicable_blocks: ["SPEC-{{NNN}}-001"]
 
 ## Description
 
-{{EXECUTABLE_OUTCOME}}
+{{EXECUTABLE_OUTCOME_AND_SCOPE_BOUNDARIES}}
 
 ## Applicable specification
 
@@ -21,12 +21,13 @@ applicable_blocks: ["SPEC-{{NNN}}-001"]
 
 ## Tasks
 
-- [ ] {{TASK}}
+- [ ] {{ORDERED_IMPLEMENTATION_STEP_WITH_STARTING_POINT_AND_RELEVANT_SPEC_BLOCK}}
 
 ## Acceptance criteria
 
-- [ ] {{STORY_CRITERION}}
+- [ ] {{OBSERVABLE_RESULT_WITH_CONCRETE_SCENARIO_AND_EXPECTED_OUTCOME}}
 
 ## Quality checklist
 
+- [ ] {{SPECIFIC_VERIFICATION_WITH_TEST_LOCATION_OR_COMMAND_AND_EXPECTED_RESULT}}
 - [ ] {{REPOSITORY_REQUIRED_CHECK}}
