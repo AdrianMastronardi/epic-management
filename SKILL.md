@@ -158,6 +158,8 @@ Use stable IDs for traceability, not as substitutes for prose. A story concept m
 
 Apply [references/implementation-handoff.md](references/implementation-handoff.md) during preparation and refinement. Store the intended approach and decision rationale in operational specification blocks, route them to every affected story, and turn them into ordered story tasks without duplicating the specification in the bundle.
 
+Apply [references/story-decomposition.md](references/story-decomposition.md) to review story boundaries and opportunities for parallel work. Split when an earlier verifiable delivery or independent work justifies the coordination cost. Capture output-based dependencies, distinguish prerequisites for starting, integrating, and completing, and review shared-resource interference. Record the durable plan in the existing specification, dependencies, and execution-order sections; keep live blocking state in GitHub.
+
 ## 3. Prove coverage and checkpoint
 
 Run the bundled validator with actual resolved paths; never pass an angle-bracket placeholder literally:
@@ -167,7 +169,7 @@ Run the bundled validator with actual resolved paths; never pass an angle-bracke
 
 Replace `<epic-directory>` and, in Codex, `<resolved-skill-root>` before execution.
 
-The validator proves structure, frontmatter, and routing consistency; it cannot prove semantic completeness or implementation readiness. Perform a section-by-section comparison against the source and the independent-agent review in [references/implementation-handoff.md](references/implementation-handoff.md), then present a checkpoint containing:
+The validator proves structure, frontmatter, routing consistency, and the internal consistency of the dependency table; it cannot prove semantic completeness, implementation readiness, or that a dependency is real. Perform a section-by-section comparison against the source and the independent-agent review in [references/implementation-handoff.md](references/implementation-handoff.md), then present a checkpoint containing:
 
 - every source section and its destination block;
 - every block's `context` or `operational` classification;
@@ -175,6 +177,12 @@ The validator proves structure, frontmatter, and routing consistency; it cannot 
 - all exclusions, open decisions, and deferred work;
 - the intended implementation approach and rationale for each story, distinguishing agreed decisions, proposals, and implementation discretion;
 - the independent-agent review result, including any missing context or decisions that block implementation;
+- the decomposition review from [references/story-decomposition.md](references/story-decomposition.md):
+  - the rationale for each consequential split or retained shared prerequisite;
+  - the dependency graph, with each dependency's required output, release condition, and proposed native or documented projection and its rationale;
+  - the event sequence for any apparent story cycle, or the real cycle reported as a blocker;
+  - candidate concurrent work, interference handling, and who owns integrated verification;
+  - remaining bottlenecks and uncertainty;
 - any wording that was merged, split, or materially rewritten;
 - the proposed EPIC and story titles with labels;
 - the `sources` entries and the human identifier that will be recorded as the verifier;
@@ -200,7 +208,7 @@ Generate issue bodies from the approved concepts:
 - Create every story as a direct native sub-issue of the EPIC, keep native order aligned with `epic.md`, and model only explicit execution constraints as dependencies. If the target host exposes no native sub-issue transport, stop rather than degrading to Markdown checklists or links.
 - Rebuild previews after issue numbers become known.
 
-Use deterministic titles for idempotence. Detect existing EPIC, story, parent/sub-issue, dependency, branch, and PR state before creating anything. On partial failure, resume from remote state and verify bodies and relationships before patching.
+Use deterministic titles for idempotence. Detect existing EPIC, story, parent/sub-issue, dependency, branch, and PR state before creating anything. On `resume`, establish delivery evidence before adding a native dependency edge, as defined in [references/story-decomposition.md](references/story-decomposition.md#project-dependencies-into-github). On partial failure, resume from remote state and verify bodies and relationships before patching.
 
 After exact-write approval, create or reuse the GitHub issues and move the approved directory to `docs/epics/EPIC-NNN-name/`. Then set `status: stable` on every concept, write each issue URL into the EPIC's `resource`, each `stories[].resource`, and each story concept's `resource`, and update the bundle. When `docs/epics/index.md` does not exist, create it from [assets/bundle-index-template.md](assets/bundle-index-template.md), adapt its language to the repository, and resolve or remove every placeholder. Add the EPIC to the index group matching its `epic_status`, newest first. Preserve an existing index's language and ordering. Never add future work without a published concept or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epics/backlog.md` from [assets/backlog-concept-template.md](assets/backlog-concept-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the published concept contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
 
@@ -254,6 +262,7 @@ Finish `prepare` or `refine` only when:
 - exactly one complete working EPIC directory exists under `tmp/` and the source remains recoverable at its existing path;
 - `validate_epic.py` passes and the section-by-section coverage review completed, and the checkpoint identifies the working EPIC as unpublished;
 - the independent-agent review passes; unresolved implementation blockers remain in refinement rather than being presented as ready work;
+- the decomposition review explains useful splits, output-based dependencies, candidate parallel work, and integration checks without inventing sequencing barriers or claiming unresolved prerequisites are available;
 - no GitHub issue was created or mutated and nothing under `docs/epics/` was changed.
 
 Finish `publish` or publication `resume` only when:
@@ -287,7 +296,8 @@ Finish `help` or `inspect` without local or remote mutations.
 - [assets/story-concept-template.md](assets/story-concept-template.md) — copy and fill for each story concept.
 - [references/okf-bundle.md](references/okf-bundle.md) — read before creating, editing, validating, or migrating any EPIC artifact.
 - [references/implementation-handoff.md](references/implementation-handoff.md) — read during preparation, refinement, and issue-body review to preserve the intended implementation for an independent agent.
+- [references/story-decomposition.md](references/story-decomposition.md) — read during preparation and refinement to choose useful story boundaries and review dependencies, parallel work, and integration; recheck the plan in issue-body previews.
 - [references/github-publication.md](references/github-publication.md) — read before GitHub or git mutations.
-- [references/github-sub-issues.md](references/github-sub-issues.md) — read before creating, attaching, ordering, reparenting, or verifying story issues.
+- [references/github-sub-issues.md](references/github-sub-issues.md) — read before creating, attaching, ordering, reparenting, or verifying story issues, and before reading or changing dependency edges.
 - [scripts/validate_epic.py](scripts/validate_epic.py) — validate one EPIC concept directory, working or published.
 - [scripts/validate_okf_bundle.py](scripts/validate_okf_bundle.py) — validate the whole bundle against OKF v0.2.

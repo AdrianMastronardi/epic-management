@@ -84,6 +84,8 @@ The EPIC concept remains the single home of the specification text. Story concep
 
 Story concepts never record progress, assignee, or blocking state. GitHub remains authoritative for live execution state; the concept records the durable definition of the work.
 
+Durable dependency design belongs in operational specification blocks, with summaries in the EPIC's existing `Dependencies` and `Execution order` sections. Story concepts link the applicable blocks and use their existing tasks and checks for prerequisites and integration work. The graph records required outputs and conditions, not current readiness or whether a live blocker has been satisfied. See [story-decomposition.md](story-decomposition.md) for the semantic review; this adds no frontmatter fields or required sections and does not invalidate existing bundles. The validator checks the dependency table from the EPIC template when `Dependencies` contains it; prose or `None` in that section remains valid.
+
 ## Stories
 
 Each `stories` entry binds a story identifier to its concept file and its issue:

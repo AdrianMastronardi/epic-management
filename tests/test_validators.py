@@ -17,6 +17,10 @@ from validate_okf_bundle import validate as validate_bundle  # noqa: E402
 
 EPIC_DIRECTORY = "EPIC-001-example"
 STORY_FILE = "STORY-001-001-implement-example.md"
+SECOND_STORY_FILE = "STORY-001-002-consume-example.md"
+DEPENDENCY_HEADER = """| Producer | Consumer | Output | Phase | Release condition | Projection | Spec |
+| -------- | -------- | ------ | ----- | ----------------- | ---------- | ---- |
+"""
 
 
 class ValidatorTests(unittest.TestCase):
@@ -172,6 +176,137 @@ Implement the example.
 """,
         )
         return epic
+
+    def create_dependent_epic(self, dependency_rows: str) -> Path:
+        """Extend the working fixture with a second story and a dependency table."""
+        epic = self.create_epic(published=False)
+        path = epic / "epic.md"
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            f"    concept: ./{STORY_FILE}\n",
+            f"    concept: ./{STORY_FILE}\n"
+            "  - id: STORY-001-002\n"
+            "    title: Consume example\n"
+            f"    concept: ./{SECOND_STORY_FILE}\n",
+        )
+        text = text.replace(
+            "## Affected components",
+            "### SPEC-001-002: Example contract\n\n"
+            "Publish the example contract.\n\n"
+            "## Affected components",
+        )
+        text = text.replace("None.\n", DEPENDENCY_HEADER + dependency_rows)
+        text += "| SPEC-001-002 | operational | STORY-001-001, STORY-001-002 |\n"
+        path.write_text(text, encoding="utf-8")
+
+        first = epic / STORY_FILE
+        story = first.read_text(encoding="utf-8")
+        first.write_text(
+            story.replace(
+                "applicable_blocks: [SPEC-001-001]",
+                "applicable_blocks: [SPEC-001-001, SPEC-001-002]",
+            ).replace(
+                "\n## Tasks",
+                "- [SPEC-001-002: Example contract](./epic.md#spec-001-002-example-contract)\n"
+                "\n## Tasks",
+            ),
+            encoding="utf-8",
+        )
+        self.write(
+            epic / SECOND_STORY_FILE,
+            story.replace(
+                "STORY-001-001 — Implement example", "STORY-001-002 — Consume example"
+            )
+            .replace(
+                "applicable_blocks: [SPEC-001-001]", "applicable_blocks: [SPEC-001-002]"
+            )
+            .replace(
+                "- [SPEC-001-001: Example behavior](./epic.md#spec-001-001-example-behavior)",
+                "- [SPEC-001-002: Example contract](./epic.md#spec-001-002-example-contract)",
+            ),
+        )
+        index = epic / "index.md"
+        index.write_text(
+            index.read_text(encoding="utf-8")
+            + f"- [STORY-001-002 — Consume example]({SECOND_STORY_FILE}) - Consume the example.\n",
+            encoding="utf-8",
+        )
+        return epic
+
+    def test_dependency_table_accepts_each_projection(self) -> None:
+        epic = self.create_dependent_epic(
+            "| STORY-001-001 | STORY-001-002 | Contract | start | Contract merged | native | SPEC-001-002 |\n"
+            "| STORY-001-002 | STORY-001-001 | Client | integrate | Client merged | documented | [SPEC-001-002](#spec-001-002-example-contract) |\n"
+            "| External schema registry | STORY-001-002 | Registry access | complete | Access granted | documented | SPEC-001-002 |\n"
+        )
+        self.assertEqual(validate_epic(epic, None), [])
+
+    def assert_native_projection_rejected(self, row: str) -> None:
+        epic = self.create_dependent_epic(row)
+        self.assertTrue(
+            any(
+                "native projection requires a start-phase dependency" in error
+                for error in validate_epic(epic, None)
+            )
+        )
+
+    def test_dependency_table_accepts_escaped_pipes(self) -> None:
+        for output in (r"`Result = Ok \| Error`", r"Contract \\", r"Contract \\\| fallback"):
+            with self.subTest(output=output):
+                epic = self.create_dependent_epic(
+                    f"| STORY-001-001 | STORY-001-002 | {output}| start | "
+                    r"Check `ok\|error` passes | native | SPEC-001-002 |" + "\n"
+                )
+                self.assertEqual(validate_epic(epic, None), [])
+
+    def test_dependency_table_rejects_partial_spec_identifiers(self) -> None:
+        for block in ("SPEC-001-0029", "SPEC-001-002suffix", "SPEC-001-002-extra"):
+            for spec in (block, f"SPEC-001-002, {block}"):
+                with self.subTest(spec=spec):
+                    epic = self.create_dependent_epic(
+                        "| STORY-001-001 | STORY-001-002 | Contract | start | "
+                        f"Contract merged | native | {spec} |\n"
+                    )
+                    self.assertTrue(
+                        any(
+                            f"dependency references unknown {block}" in error
+                            for error in validate_epic(epic, None)
+                        )
+                    )
+
+    def test_native_projection_requires_start_phase(self) -> None:
+        self.assert_native_projection_rejected(
+            "| STORY-001-001 | STORY-001-002 | Contract | complete | Contract merged | native | SPEC-001-002 |\n"
+        )
+
+    def test_native_projection_requires_story_producer(self) -> None:
+        self.assert_native_projection_rejected(
+            "| External team | STORY-001-002 | Contract | start | Contract merged | native | SPEC-001-002 |\n"
+        )
+
+    def test_dependency_table_rejects_inconsistent_references(self) -> None:
+        epic = self.create_dependent_epic(
+            "| STORY-001-009 | STORY-001-002 | Contract | begin | Contract merged | documented | SPEC-001-001 |\n"
+        )
+        errors = validate_epic(epic, None)
+        for expected in (
+            "producer STORY-001-009 is not a declared story",
+            "phase must be one of start, integrate, complete",
+            "SPEC-001-001 is not routed to STORY-001-002",
+        ):
+            self.assertTrue(any(expected in error for error in errors), expected)
+
+    def test_native_dependency_cycle_is_rejected(self) -> None:
+        epic = self.create_dependent_epic(
+            "| STORY-001-001 | STORY-001-002 | Contract | start | Contract merged | native | SPEC-001-002 |\n"
+            "| STORY-001-002 | STORY-001-001 | Client | start | Client merged | native | SPEC-001-002 |\n"
+        )
+        self.assertTrue(
+            any(
+                "native dependency projections form a cycle" in error
+                for error in validate_epic(epic, None)
+            )
+        )
 
     def test_valid_epic_passes_with_pyyaml_and_fallback(self) -> None:
         epic = self.create_epic()

@@ -85,13 +85,15 @@ A bare invocation shows help and performs no repository reads, GitHub access, or
 
 1. Write the complete functional and technical specification in a temporary source file.
 2. Run `prepare` to transform that source into one complete working EPIC directory under `tmp/`.
-3. Review the coverage checkpoint, including every source section, block classification, issue destination, exclusion, open decision, and the identity that will be recorded as verifier.
+3. Review the coverage checkpoint, including every source section, block classification, issue destination, exclusion, open decision, decomposition rationale, dependency graph, candidate parallel work, and the identity that will be recorded as verifier.
 4. Approve the checkpoint only when the EPIC preserves the complete source and the proposed issue routing is correct.
 5. Run `publish`, or continue `prepare-and-publish`, to preview the exact issues, native parent/sub-issue actions, dependency edges, and repository writes.
 6. Approve the writes, then let the skill create or reuse GitHub resources, attach every story as a direct sub-issue, move the directory into `docs/epics/`, update the bundle index, and open the documentation pull request.
 7. After a human merges the pull request, run `resume` to verify the merge and complete safe post-merge cleanup.
 
 The skill reads and obeys repository-specific guidance for language, labels, GitHub transport, protected branches, commits, checks, and pull-request lifecycle.
+
+Preparation and refinement review story boundaries to enable earlier verifiable deliveries and independent work where the benefit outweighs coordination cost. Dependencies identify the required output and the condition for starting, integrating, or completing; the review also covers shared-resource interference and integrated verification. The checkpoint presents the graph and remaining bottlenecks without turning story order or execution waves into artificial blockers. The bundle preserves this design while GitHub owns live blocking state. See [references/story-decomposition.md](references/story-decomposition.md) for the review criteria.
 
 ## Bundle model
 
@@ -150,7 +152,7 @@ Validate the whole bundle against OKF v0.2:
 python3 scripts/validate_okf_bundle.py docs/epics
 ```
 
-The EPIC validator checks frontmatter families, the actor convention, lifecycle values, numbering, routing consistency, story paths and resource agreement, applicable specification links, required sections, unresolved placeholders, forbidden temporary references, and draft labelling. The bundle validator checks OKF conformance and reports the tolerances OKF grants consumers, such as broken cross-links, as warnings; `--strict` turns them into failures. Neither proves semantic completeness, which still requires a section-by-section comparison with the source specification.
+The EPIC validator checks frontmatter families, the actor convention, lifecycle values, numbering, routing consistency, story paths and resource agreement, applicable specification links, required sections, unresolved placeholders, forbidden temporary references, and draft labelling. When the `Dependencies` section uses the template's table, it also checks story and block identifiers, phases, projections, routing to the consumer, and cycles among native edges. The bundle validator checks OKF conformance and reports the tolerances OKF grants consumers, such as broken cross-links, as warnings; `--strict` turns them into failures. Neither proves semantic completeness or that a dependency is real, which still requires a section-by-section comparison with the source specification and the decomposition review.
 
 Both validators use PyYAML when it is importable and fall back to a strict parser for the documented frontmatter subset otherwise, so they run without third-party dependencies.
 
@@ -182,12 +184,16 @@ epic-management/
 ├── references/
 │   ├── github-publication.md  # approval-gated publication protocol
 │   ├── github-sub-issues.md  # native parent/sub-issue protocol
-│   └── okf-bundle.md  # OKF format contract for EPIC artifacts
+│   ├── implementation-handoff.md  # implementation intent and readiness review
+│   ├── okf-bundle.md  # OKF format contract for EPIC artifacts
+│   └── story-decomposition.md  # story boundaries, dependencies, and parallel work
 ├── scripts/
 │   ├── okf.py  # shared OKF frontmatter parsing and checks
 │   ├── validate_epic.py  # EPIC concept directory validator
 │   └── validate_okf_bundle.py  # OKF bundle conformance validator
 ├── tests/
+│   ├── story-decomposition-cases.md  # planning inputs for behavioral evaluation
+│   ├── story-decomposition-rubric.md  # expected decisions, kept from the evaluator
 │   └── test_validators.py  # deterministic validator regression tests
 ├── CHANGELOG.md  # version history
 ├── CONTRIBUTING.md  # contribution guidelines

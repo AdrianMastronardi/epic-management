@@ -38,6 +38,7 @@ Can an implementer determine:
 3. How the intended solution works, in what order to build it, and which prerequisite contracts or outputs it relies on?
 4. Why the consequential decisions were made, which are binding, and which choices remain open to the implementer?
 5. How to verify the result, including the relevant edge and failure cases?
+6. Which outputs are required to start, integrate, or complete the work, what makes them usable, and how shared contracts and resources remain compatible with concurrent stories? Apply the review in [story-decomposition.md](story-decomposition.md), including responsibility for integrated verification.
 
 If an answer depends on remembering the discussion, “see parent issue,” an unexplained design link, or a task such as “implement the service,” add the missing substance to a routed specification block. A structurally valid document with these gaps is not ready for implementation. Report unresolved blockers at the existing checkpoint; do not invent answers to pass the review.
 

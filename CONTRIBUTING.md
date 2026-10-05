@@ -84,6 +84,8 @@ Use a complete bundle fixture with an EPIC that covers both `context` and `opera
 
 Exercise the frontmatter parser with and without PyYAML installed, since the validators must agree in both environments.
 
+For decomposition or dependency-policy changes, exercise the planning cases in [tests/story-decomposition-cases.md](tests/story-decomposition-cases.md) and assess the resulting decisions with [tests/story-decomposition-rubric.md](tests/story-decomposition-rubric.md). Keep expected decisions separate from evaluator inputs, and give an independent evaluator an isolated copy of the cases and skill instructions without the rubric. Compare against the previous release when the change adds or alters policy. Report whether the exercise was an independent agent evaluation or a manual walkthrough, and how many runs it covers; passing the structural validators alone does not demonstrate the planning behavior. Add focused dependency-table fixtures to the validator tests when changing the checks on that table.
+
 For invocation changes, verify at minimum:
 
 - `$epic-management help` in Codex.

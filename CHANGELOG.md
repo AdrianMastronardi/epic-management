@@ -16,6 +16,33 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-05
+
+### Skill
+
+- `references/github-publication.md`: preserves dependency phases and integration responsibilities, previews native and documented projections separately, keeps each documented gate as its own checkbox, classifies satisfied and unclassified dependencies, and checks delivery evidence on resume to avoid restoring satisfied blockers or treating closed producers without delivery as usable blockers.
+- `references/github-sub-issues.md`: recognizes dependencies proposed during refinement and approved at the coverage checkpoint while preserving the distinction between priority and blocking, and defines the native dependency-edge transport with GitHub CLI and REST commands, bidirectional readback, and the failure rule when no transport exists.
+- `references/implementation-handoff.md`: reviews prerequisites for starting, integrating, and completing alongside compatibility with concurrent stories.
+- `references/okf-bundle.md`: locates durable dependency design in existing sections and specification blocks without adding live state or changing the artifact schema, and states that the dependency table is validated only when present.
+- `references/story-decomposition.md`: adds useful split criteria, output-based dependencies, interference review, deliverable-level cycle analysis, explicit native dependency projection rules, and integrated verification; defines delivery evidence, gates as issue checkboxes, acyclic native projection, identifier stability after a split, the transition from proposed to approved dependencies, and the handling of dependencies published without a projection. Merged pull request evidence must establish delivery on the consumer's base branch and passing release-condition checks, including that the output remains available.
+- `SKILL.md`: applies decomposition review during preparation and refinement, itemizes parallel work, bottlenecks, and dependency rationale in the coverage checkpoint, and requires delivery evidence before adding native edges on resume.
+
+### Templates
+
+- `assets/epic-concept-template.md`: replaces the dependency prompt with a table of producer, consumer, output, phase, release condition, projection, and specification block, and prompts for event sequences and decomposition rationale.
+- `assets/story-concept-template.md`: adds separate checkbox prompts for start, integration, and completion gates and for contract or integration checks.
+
+### Validation
+
+- `scripts/validate_epic.py`: checks the dependency table when the `Dependencies` section contains it, rejecting undeclared stories, unknown phases or projections, native projections outside start-phase story dependencies, blocks not routed to the consumer, and cycles among native edges; preserves escaped pipes in table cells and validates complete SPEC reference tokens instead of accepting valid prefixes of unknown identifiers. Prose-only sections stay valid.
+- `tests/test_validators.py`: covers a valid dependency table with each projection plus regressions for native projection limits, inconsistent references, native cycles, escaped pipes, backslashes before column separators, and malformed SPEC references both alone and alongside valid references.
+
+### Documentation
+
+- `CONTRIBUTING.md`: requires behavioral evaluation of decomposition and dependency-policy changes with an isolated evaluator and a previous-release baseline, distinguishing independent evaluation from manual review.
+- `README.md`: explains decomposition for parallel work, links the new review guidance, and describes the dependency-table checks.
+- `tests/story-decomposition-cases.md`, `tests/story-decomposition-rubric.md`: separate ten synthetic planning inputs from their behavioral acceptance criteria, covering parallel work, phase gates, apparent and real cycles, cohesive scope, shared-resource interference, external prerequisites, mixed projections, and resumption after delivery or from an older publication, including deliveries on another branch, failed required checks, and reverted deliveries.
+
 ## [0.2.3] - 2026-09-24
 
 ### Skill
@@ -156,7 +183,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.0...v0.2.1

@@ -1,13 +1,13 @@
 # GitHub Sub-issues
 
-Read this file before creating, attaching, reparenting, ordering, or verifying EPIC story issues. GitHub Sub-issues are a native issue relationship, not a Markdown task list and not a dependency edge.
+Read this file before creating, attaching, reparenting, ordering, or verifying EPIC story issues, and before reading or changing their dependency edges. GitHub Sub-issues are a native issue relationship, not a Markdown task list and not a dependency edge.
 
 ## Relationship model
 
 - The EPIC issue is the parent.
 - Every `STORY-NNN-SSS` issue is a direct native sub-issue of that EPIC.
 - A story remains an independent GitHub issue with its own body, state, labels, assignees, and discussion.
-- The parent/sub-issue relation expresses decomposition and ownership. `blocked by` and `blocking` express execution constraints. Create dependency edges only when the specification states them; never infer them from story order.
+- The parent/sub-issue relation expresses decomposition and ownership. `blocked by` and `blocking` express execution constraints. Create dependency edges only when the specification states them, including dependencies proposed during refinement and approved at the coverage checkpoint; never infer them from story order. Follow [story-decomposition.md](story-decomposition.md) when projecting phase-specific prerequisites into blocking edges.
 - The native sub-issue order follows the ordered `stories` list in `epic.md`.
 - A Markdown checklist or a `## Stories` body section is never evidence of parentage. Do not create a checkbox list to imitate the native relation. GitHub's sub-issue panel and progress summary are authoritative.
 
@@ -29,7 +29,8 @@ The expected capabilities are:
 
 - `gh issue create --parent` for creating a new story and assigning its EPIC parent in the same command;
 - `gh issue edit --add-sub-issue` or `gh issue edit --parent` for attaching an existing story;
-- `gh issue view --json parent,subIssues,subIssuesSummary` for readback.
+- `gh issue view --json parent,subIssues,subIssuesSummary` for readback;
+- `gh issue edit --add-blocked-by` and `--remove-blocked-by`, plus `gh issue view --json blockedBy,blocking`, when the approved plan projects any native dependency edge.
 
 If those flags are unavailable but `gh api` works, use GitHub's REST Sub-issues endpoints. A fine-grained token needs Issues read permission for observation and Issues write permission for mutation. REST permits a child owned by the same repository owner as the parent; keep stories in the EPIC repository unless the approved plan explicitly names a cross-repository child.
 
@@ -74,7 +75,7 @@ For each story, preview:
 - current parent, if any;
 - relationship action: create-with-parent, attach, keep, reorder, reparent, or conflict;
 - final native priority;
-- dependency edges, listed separately from parentage.
+- dependency edges, listed separately from parentage, using the native-versus-documented projection policy in [story-decomposition.md](story-decomposition.md#project-dependencies-into-github); include the phase conditions that remain in the issue body and the reason for each projection.
 
 Reparenting is a distinct destructive relationship change. Require explicit approval that names the old parent, new parent, and affected story. Ordinary publication approval does not authorize replacing an existing parent.
 
@@ -117,6 +118,39 @@ gh api --method PATCH repos/OWNER/REPO/issues/EPIC_NUMBER/sub_issues/priority -F
 
 Do not encode ordering as blocking dependencies.
 
+## Dependency edges
+
+`blocked by` and `blocking` are a native relation separate from parentage. Change them only after every story issue exists, and apply only the additions and removals approved at the exact-write checkpoint under the projection policy in [story-decomposition.md](story-decomposition.md#project-dependencies-into-github). Removing an edge discards an execution constraint: preview it by naming both issues and the reason.
+
+Read both directions before and after any change, together with the fields that qualify delivery evidence:
+
+```sh
+gh issue view CONSUMER_NUMBER --repo OWNER/REPO --json blockedBy,blocking
+gh issue view PRODUCER_NUMBER --repo OWNER/REPO --json blocking,state,stateReason,closedByPullRequestsReferences
+```
+
+`blockedBy` and `blocking` are objects with `nodes` and `totalCount`, like `subIssues`; compare the node count with `totalCount`. An edge is current only when the consumer lists the producer under `blockedBy` and the producer lists the consumer under `blocking`.
+
+With a current CLI, write each edge from the consumer side, one approved edge per command:
+
+```sh
+gh issue edit CONSUMER_NUMBER --repo OWNER/REPO --add-blocked-by PRODUCER_NUMBER
+gh issue edit CONSUMER_NUMBER --repo OWNER/REPO --remove-blocked-by PRODUCER_NUMBER
+```
+
+`gh issue create --blocked-by` sets the edge at creation only when the producer issue already exists; prefer the separate edit so creation, parentage, and dependencies stay individually readable and resumable.
+
+When those flags are unavailable, use the REST issue-dependency endpoints. `issue_id` is the producer's numeric REST database ID, as for sub-issues:
+
+```sh
+gh api --paginate repos/OWNER/REPO/issues/CONSUMER_NUMBER/dependencies/blocked_by
+gh api --paginate repos/OWNER/REPO/issues/PRODUCER_NUMBER/dependencies/blocking
+gh api --method POST repos/OWNER/REPO/issues/CONSUMER_NUMBER/dependencies/blocked_by -F issue_id=PRODUCER_DATABASE_ID
+gh api --method DELETE repos/OWNER/REPO/issues/CONSUMER_NUMBER/dependencies/blocked_by/PRODUCER_DATABASE_ID
+```
+
+If no authorized transport exposes native dependencies, stop before writing any edge and report it at the checkpoint. Keeping every approved start gate as a documented checkbox instead is a changed projection that needs approval; do not substitute labels or body links while claiming a native edge exists.
+
 ## Read back and prove
 
 After every relationship mutation, read both directions back. Before publication completes, prove all of the following:
@@ -124,7 +158,7 @@ After every relationship mutation, read both directions back. Before publication
 - the EPIC has exactly the story issues declared by `epic.md`, with no missing or undeclared children;
 - every story reports the EPIC as its parent;
 - native child order matches the `stories` order;
-- dependencies match only the explicit execution constraints;
+- native dependency edges match the approved projection and exact actions, and documented phase conditions remain in the issue bodies;
 - `subIssuesSummary.total` equals the number of declared stories;
 - issue URLs agree with `epic.md` and the story concepts.
 
@@ -137,7 +171,9 @@ If no authorized transport exposes native sub-issues on the target GitHub host, 
 ## Authoritative GitHub references
 
 - [Adding sub-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues)
+- [Creating issue dependencies](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-issue-dependencies)
 - [REST API endpoints for sub-issues](https://docs.github.com/en/rest/issues/sub-issues)
+- [REST API endpoints for issue dependencies](https://docs.github.com/en/rest/issues/issue-dependencies)
 - [GraphQL issue mutations](https://docs.github.com/en/graphql/reference/issues)
 - [`gh issue create`](https://cli.github.com/manual/gh_issue_create)
 - [`gh issue edit`](https://cli.github.com/manual/gh_issue_edit)

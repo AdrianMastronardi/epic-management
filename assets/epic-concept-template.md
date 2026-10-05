@@ -48,11 +48,19 @@ stories:
 
 ## Dependencies
 
-{{DEPENDENCIES_OR_NONE}}
+| Producer                                       | Consumer          | Output                                                    | Phase                           | Release condition                              | Projection               | Spec             |
+| ---------------------------------------------- | ----------------- | --------------------------------------------------------- | ------------------------------- | ---------------------------------------------- | ------------------------ | ---------------- |
+| {{PRODUCER_STORY_ID_OR_EXTERNAL_PREREQUISITE}} | STORY-{{NNN}}-001 | {{REQUIRED_OUTPUT_AND_WHEN_THE_PRODUCER_MAKES_IT_USABLE}} | {{start_integrate_OR_complete}} | {{OBSERVABLE_EVIDENCE_THAT_RELEASES_THE_GATE}} | {{native_OR_documented}} | SPEC-{{NNN}}-001 |
+
+{{PROJECTION_RATIONALE_FOR_EACH_DEPENDENCY_OR_REPLACE_THE_TABLE_AND_THIS_LINE_WITH_NONE}}
 
 ## Execution order
 
-{{ORDER_AND_RATIONALE}}
+{{DEPENDENCY_GRAPH_OR_DIRECTED_EDGE_LIST_WITH_PHASE_AND_OUTPUT_LABELS_INDEPENDENT_STORIES_AND_EXTERNAL_PREREQUISITES_OR_SINGLE_STORY_PLAN}}
+
+{{EXECUTABLE_EVENT_SEQUENCE_FOR_APPARENT_STORY_CYCLES_OR_REAL_CYCLE_BLOCKERS_OR_REMOVE}}
+
+{{SPLIT_RATIONALE_CANDIDATE_CONCURRENT_WORK_BOTTLENECKS_AND_UNRESOLVED_ASSUMPTIONS_WITH_SPEC_LINKS_AS_NEEDED}}
 
 ## Acceptance criteria
 

@@ -41,6 +41,19 @@ STORY_FILE_RE = re.compile(r"^(STORY-(\d{3})-(\d{3}))-[a-z0-9]+(?:-[a-z0-9]+)*\.
 SPEC_RE = re.compile(r"^### (SPEC-(\d{3})-(\d{3})):\s+\S")
 STORY_ID_RE = re.compile(r"^STORY-(\d{3})-(\d{3})$")
 SPEC_FRAGMENT_RE = re.compile(r"^(spec-\d{3}-\d{3})(?:-|$)", re.IGNORECASE)
+SPEC_REFERENCE_RE = re.compile(r"(?<![\w-])SPEC-[\w-]+")
+
+DEPENDENCY_COLUMNS = (
+    "producer",
+    "consumer",
+    "output",
+    "phase",
+    "release condition",
+    "projection",
+    "spec",
+)
+DEPENDENCY_PHASES = ("start", "integrate", "complete")
+DEPENDENCY_PROJECTIONS = ("native", "documented")
 
 REQUIRED_EPIC_SECTIONS = (
     "## Description",
@@ -107,6 +120,135 @@ def parse_distribution(document: Document, errors: list[str]) -> list[Distributi
     if not rows:
         errors.append("epic.md: distribution table has no data rows")
     return rows
+
+
+def native_cycle(edges: dict[str, set[str]]) -> list[str]:
+    """Return one cycle among consumer -> producer edges, or an empty list."""
+    finished: set[str] = set()
+
+    def visit(node: str, path: list[str]) -> list[str]:
+        if node in path:
+            return path[path.index(node) :] + [node]
+        if node in finished:
+            return []
+        for producer in sorted(edges.get(node, ())):
+            cycle = visit(producer, path + [node])
+            if cycle:
+                return cycle
+        finished.add(node)
+        return []
+
+    for consumer in sorted(edges):
+        cycle = visit(consumer, [])
+        if cycle:
+            return cycle
+    return []
+
+
+def dependency_cells(line: str) -> list[str]:
+    """Split a pipe-prefixed Markdown row, preserving escaped characters."""
+    cells: list[str] = []
+    start = 1
+    escaped = False
+    for index in range(1, len(line)):
+        character = line[index]
+        if escaped:
+            escaped = False
+        elif character == "\\":
+            escaped = True
+        elif character == "|":
+            cells.append(line[start:index].strip())
+            start = index + 1
+    if start < len(line):
+        cells.append(line[start:].strip())
+    return cells
+
+
+def validate_dependencies(
+    document: Document,
+    declared: list[str],
+    rows_by_block: dict[str, Distribution],
+    errors: list[str],
+) -> None:
+    """Check the optional dependency table; prose-only sections are not inspected."""
+    if "## Dependencies" not in document.body:
+        return
+    start, end = section_bounds(document.body, "## Dependencies")
+    in_table = False
+    native: dict[str, set[str]] = {}
+    for index in range(start + 1, end):
+        line = document.body[index].strip()
+        if not line.startswith("|"):
+            in_table = False
+            continue
+        cells = dependency_cells(line)
+        where = f"epic.md line {document.body_offset + index}"
+        if not in_table:
+            header = [cell.lower() for cell in cells]
+            if header[:2] != list(DEPENDENCY_COLUMNS[:2]):
+                continue
+            in_table = True
+            if tuple(header) != DEPENDENCY_COLUMNS:
+                errors.append(
+                    f"{where}: dependency table columns must be Producer, Consumer, "
+                    "Output, Phase, Release condition, Projection, Spec"
+                )
+                return
+            continue
+        if all(cell and set(cell) <= {"-", ":"} for cell in cells):
+            continue
+        if len(cells) != len(DEPENDENCY_COLUMNS):
+            errors.append(f"{where}: dependency row must have seven columns")
+            continue
+        producer, consumer, output, phase, release, projection, spec = cells
+        phase = phase.lower()
+        projection = projection.lower()
+        internal = producer.upper().startswith("STORY-")
+        if not producer:
+            errors.append(f"{where}: dependency names no producer")
+        elif internal and producer not in declared:
+            errors.append(f"{where}: producer {producer} is not a declared story")
+        if consumer not in declared:
+            errors.append(f"{where}: consumer {consumer} is not a declared story")
+        if internal and producer == consumer:
+            errors.append(f"{where}: {consumer} cannot depend on itself")
+        if not output or not release:
+            errors.append(
+                f"{where}: dependency requires an output and a release condition"
+            )
+        if phase not in DEPENDENCY_PHASES:
+            errors.append(
+                f"{where}: phase must be one of {', '.join(DEPENDENCY_PHASES)}"
+            )
+        if projection not in DEPENDENCY_PROJECTIONS:
+            errors.append(
+                f"{where}: projection must be one of {', '.join(DEPENDENCY_PROJECTIONS)}"
+            )
+        elif projection == "native":
+            if phase != "start" or not internal:
+                errors.append(
+                    f"{where}: a native projection requires a start-phase dependency "
+                    "on a declared story"
+                )
+            elif producer in declared and consumer in declared:
+                native.setdefault(consumer, set()).add(producer)
+        blocks = SPEC_REFERENCE_RE.findall(spec)
+        if not blocks:
+            errors.append(f"{where}: dependency must reference a SPEC block")
+        for block_id in blocks:
+            row = rows_by_block.get(block_id)
+            if row is None:
+                errors.append(f"{where}: dependency references unknown {block_id}")
+            elif row.block_class != "operational":
+                errors.append(f"{where}: {block_id} must be operational")
+            elif consumer in declared and consumer not in row.destinations:
+                errors.append(f"{where}: {block_id} is not routed to {consumer}")
+    cycle = native_cycle(native)
+    if cycle:
+        errors.append(
+            "epic.md: native dependency projections form a cycle: "
+            + " blocked by ".join(cycle)
+        )
 
 
 def check_sections(
@@ -459,6 +601,8 @@ def validate(target: Path, stage: str | None) -> list[str]:
             errors.append(
                 f"epic.md: distribution references unknown blocks: {', '.join(sorted(extra))}"
             )
+
+    validate_dependencies(epic, declared, rows_by_block, errors)
 
     found: dict[str, Path] = {}
     for path in story_files:

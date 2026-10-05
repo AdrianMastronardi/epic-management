@@ -39,8 +39,8 @@ Construct each story body from:
 
 - the story concept's description;
 - an `Applicable specification` section containing the complete text of every block named in the story's `applicable_blocks`;
-- ordered implementation tasks, with starting points and prerequisite outputs where relevant;
-- story acceptance criteria;
+- ordered implementation tasks, with starting points and prerequisite outputs where relevant, keeping each start or integration gate as its own checkbox;
+- story acceptance criteria, keeping each completion gate as its own checkbox;
 - quality checklist;
 - the relation to the EPIC issue;
 - a link to the published EPIC concept.
@@ -48,6 +48,8 @@ Construct each story body from:
 The story concept links its blocks instead of copying them, which is correct inside the bundle and wrong in an issue. Resolve every such link into full text when generating a body. Do not replace applicable specification text with IDs, summaries, or links. Preserve negations, units, bounds, failure behavior, edge cases, and explicit exclusions.
 
 Include the intended implementation approach, decision rationale and status, and concrete verification details from the approved concepts. Shared design required by a story must be routed to and embedded in that story, even when it also appears in the EPIC body. A new agent must not need the preparation conversation or the parent issue to reconstruct the plan.
+
+Preserve the approved decomposition plan from [story-decomposition.md](story-decomposition.md): required outputs, conditions for starting, integrating, and completing, shared-resource coordination, and responsibility for integrated verification. Compare the EPIC graph and each story preview against the same routed specification. Dependencies proposed during refinement must have passed the coverage checkpoint before becoming publication writes. Apply that reference's projection policy: native edges represent start gates requiring a producer's completed delivery; later phase gates and outputs available earlier remain explicit conditions in issue bodies.
 
 If a body would exceed the platform limit, stop and redesign the story boundaries or obtain explicit approval for another lossless representation. Never truncate.
 
@@ -59,8 +61,8 @@ Search all states, not only open resources:
 2. Find every story by its deterministic `STORY-NNN-SSS:` prefix.
 3. Read the EPIC's native sub-issues in priority order and the current parent of every reused story.
 4. Find the documentation branch and open PR.
-5. Compare titles, labels, parentage, native child order, dependencies, bodies, head SHA, and base branch.
-6. Classify each resource and relationship as absent, current, stale, or conflicting.
+5. Compare titles, labels, parentage, native child order, approved dependency projections, bodies, head SHA, and base branch. Check delivery evidence before treating a prerequisite as satisfied; an issue's closed state alone is insufficient. Do not recreate a satisfied blocker from the durable graph during `resume`. A closed producer without delivery evidence is a conflict to resolve at the existing checkpoint before applying its dependency actions, as defined in [story-decomposition.md](story-decomposition.md#project-dependencies-into-github).
+6. Classify each resource and relationship as absent, current, stale, or conflicting. Classify an approved native dependency as satisfied when its edge is absent and delivery evidence shows the prerequisite was met: it needs no write and is not absent on later resumes. Report a dependency without an approved projection as unclassified and leave its existing edges in place.
 
 Treat a matching deterministic identity with different semantics as a conflict, not a resource to overwrite.
 
@@ -71,6 +73,7 @@ Before the first remote mutation, show:
 - EPIC title, labels, and complete body preview;
 - every story title, labels, and complete body preview;
 - every planned native parent/sub-issue action, current parent, final child priority, and dependency edge, keeping parentage and dependencies separate;
+- each dependency's required output, consumer phase, release condition, native or documented projection and rationale, observed satisfaction evidence or uncertainty, and exact edge additions, retentions, or removals; explain changes from the approved design and preserve all documented gates in body previews;
 - which existing resources will be reused or patched;
 - every file created, moved, or modified inside `docs/epics/`, including the index entry;
 - branch name, commit intent, and PR body;
@@ -84,7 +87,7 @@ Apply writes one resource at a time and read each one back:
 
 1. Create or reuse the EPIC issue.
 2. Create new stories with the EPIC parent in the same command when the transport supports it. For reused stories, verify they have no conflicting parent before attaching them.
-3. Read every relationship back in both directions, reconcile native priority with the ordered `stories` list, and create blocking relationships only for explicit dependencies.
+3. Read every relationship back in both directions, reconcile native priority with the ordered `stories` list, and apply only the approved native dependency actions through the transport in [github-sub-issues.md](github-sub-issues.md#dependency-edges). Read those edges back and verify documented phase conditions in the issue bodies; do not turn all specification dependencies into native blockers.
 4. Rebuild and patch the EPIC body if repository conventions require a plain-linked story summary. Do not duplicate native progress as a Markdown checklist.
 5. Create or reuse the documentation branch from the current protected base.
 6. Move the single approved working directory to `docs/epics/EPIC-NNN-name/`; do not copy it and do not publish the temporary source separately.
