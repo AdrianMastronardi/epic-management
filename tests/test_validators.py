@@ -401,37 +401,80 @@ Implement the example.
             )
         )
 
+    def set_timestamp(self, epic: Path, key: str, value: str) -> None:
+        """Write stale_after or the EPIC's first sources[].last_modified."""
+        path = epic / "epic.md"
+        if key == "stale_after":
+            anchor, replacement = "sources:\n", f"stale_after: {value}\nsources:\n"
+        else:
+            anchor = "    title: Example specification\n"
+            replacement = f"{anchor}    {key}: {value}\n"
+        text = path.read_text(encoding="utf-8").replace(anchor, replacement, 1)
+        path.write_text(text, encoding="utf-8")
+
     def test_stale_after_is_optional(self) -> None:
-        for line, valid in (
-            ("", True),
-            ("stale_after:\n", True),
-            ('stale_after: ""\n', True),
-            ("stale_after: 2027-01-31\n", True),
-            ('stale_after: "2027-02-31"\n', False),
-        ):
-            with self.subTest(line=line):
+        for value in (None, "", '""'):
+            with self.subTest(value=value):
                 epic = self.create_epic()
-                path = epic / "epic.md"
-                text = path.read_text(encoding="utf-8").replace(
-                    "sources:\n", line + "sources:\n", 1
-                )
-                path.write_text(text, encoding="utf-8")
-                errors = validate_epic(epic, None)
-                bundle_errors, _ = validate_bundle(epic.parent, strict=False)
-                if valid:
-                    self.assertEqual(errors, [])
-                    self.assertEqual(bundle_errors, [])
-                else:
-                    self.assertTrue(any("stale_after" in error for error in errors))
-                    self.assertTrue(
-                        any("stale_after" in error for error in bundle_errors)
+                if value is not None:
+                    self.set_timestamp(epic, "stale_after", value)
+                self.assertEqual(validate_epic(epic, None), [])
+                self.assertEqual(validate_bundle(epic.parent, strict=True), ([], []))
+
+    def test_okf_timestamps_accept_utc_offset_datetimes(self) -> None:
+        for key in ("stale_after", "last_modified"):
+            for value in ("2027-04-17T00:00:00Z", '"2027-04-17T09:30:00+02:00"'):
+                with self.subTest(key=key, value=value):
+                    epic = self.create_epic()
+                    self.set_timestamp(epic, key, value)
+                    self.assertEqual(validate_epic(epic, None), [])
+                    self.assertEqual(
+                        validate_bundle(epic.parent, strict=True), ([], [])
                     )
 
-    def test_epic_template_omits_optional_stale_after(self) -> None:
+    def test_okf_timestamps_reject_malformed_values(self) -> None:
+        for key in ("stale_after", "last_modified"):
+            for value, message in (
+                ("2027-04-17T00:00:00", "explicit UTC offset, such as"),
+                ('"2027-04-17T25:00:00Z"', "not a real ISO 8601 datetime"),
+                ('"2027-02-31"', "not a real calendar date"),
+            ):
+                with self.subTest(key=key, value=value):
+                    epic = self.create_epic()
+                    self.set_timestamp(epic, key, value)
+                    errors = validate_epic(epic, None)
+                    bundle_errors, _ = validate_bundle(epic.parent, strict=False)
+                    for found in (errors, bundle_errors):
+                        self.assertTrue(
+                            any(key in error and message in error for error in found),
+                            found,
+                        )
+
+    def test_date_only_timestamps_fail_epic_and_warn_bundle(self) -> None:
+        for key in ("stale_after", "last_modified"):
+            with self.subTest(key=key):
+                epic = self.create_epic()
+                self.set_timestamp(epic, key, "2027-04-17")
+                expected = "'2027-04-17' is date-only"
+                self.assertTrue(
+                    any(expected in error for error in validate_epic(epic, None))
+                )
+                errors, warnings = validate_bundle(epic.parent, strict=False)
+                self.assertEqual(errors, [])
+                self.assertTrue(any(expected in warning for warning in warnings))
+                self.assertTrue(
+                    any("2027-04-17T00:00:00Z" in warning for warning in warnings)
+                )
+                strict_errors, _ = validate_bundle(epic.parent, strict=True)
+                self.assertTrue(any(expected in error for error in strict_errors))
+
+    def test_epic_template_omits_stale_after_and_uses_datetimes(self) -> None:
         epic_template = okf.read_document(
             PROJECT_ROOT / "assets" / "epic-concept-template.md"
         )
         self.assertFalse(epic_template.has("stale_after"))
+        for source in okf.as_list(epic_template.get("sources")):
+            self.assertEqual(source["last_modified"], "{{ISO_8601_UTC}}")
 
     def test_bundle_index_accepts_dot_prefixed_epic_link(self) -> None:
         epic = self.create_epic(dot_prefix=True)

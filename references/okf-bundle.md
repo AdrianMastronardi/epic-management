@@ -55,7 +55,7 @@ The EPIC concept remains the single home of the specification text. Story concep
 | `status`       | Always            | OKF document lifecycle: `draft` under `tmp/`, `stable` once published, `deprecated` once superseded.              |
 | `generated`    | Always            | `{ by: <actor>, at: <ISO 8601 UTC> }` for the last meaningful content change.                                     |
 | `verified`     | After approval    | List of `{ by: <actor>, at: <ISO 8601 UTC> }`. The coverage checkpoint adds the human entry.                      |
-| `stale_after`  | Optional          | Absolute `YYYY-MM-DD` to re-check the EPIC's context. Omit it unless the source or the user states one.           |
+| `stale_after`  | Optional          | UTC instant to re-check the EPIC's context. See [Timestamps](#timestamps); omit it unless a source states one.    |
 | `sources`      | Always            | The materials the EPIC was built from. See [Sources](#sources).                                                   |
 | `epic_number`  | Always            | The three-digit number, quoted so the leading zero survives.                                                      |
 | `epic_status`  | Always            | Execution lifecycle: `Active`, `Blocked`, `Completed`, or `Cancelled`, or the repository's controlled vocabulary. |
@@ -112,7 +112,7 @@ sources:
     resource: Functional and technical specification supplied for EPIC-020 on 2026-08-18
     title: Durable memory functional and technical specification
     author: human:adrian
-    last_modified: 2026-08-18
+    last_modified: 2026-08-18T00:00:00Z
 ```
 
 Use a followable `resource` — an absolute URL, or a bundle-relative path into `references/` — whenever the material is durable. When the source was a temporary file that the workflow consumes and retires, OKF permits a scope descriptor instead of a path; name the specification, its EPIC, and its date so the origin stays auditable without archiving a duplicate specification under `docs/`.
@@ -141,13 +141,19 @@ Derive the human identifier from the repository's git identity, normally the loc
 
 ## Timestamps
 
-`generated.at` and `verified[].at` are ISO 8601 UTC datetimes and must be real. Read the clock instead of estimating:
+Every OKF timestamp — `generated.at`, `verified[].at`, `stale_after`, and `sources[].last_modified` — is an ISO 8601 datetime with an explicit UTC offset, such as `2026-08-18T09:30:00Z`. `started_on` and `completed_on` are this skill's own calendar-day fields, not OKF timestamps, and keep the `YYYY-MM-DD` form.
+
+`generated.at` and `verified[].at` must be real. Read the clock instead of estimating:
 
 ```sh
 date -u +%Y-%m-%dT%H:%M:%SZ
 ```
 
 `generated.at` changes only when the content changes meaningfully. `verified[].at` records when a human or process confirmed the content and is never back-dated or copied from `generated.at`.
+
+`stale_after` is the instant from which the EPIC's context must be re-checked. Omit it unless the source or the user states one; never estimate or invent it. `sources[].last_modified` records when the source itself last changed. When only the day is known, write midnight UTC of that day, such as `2026-08-18T00:00:00Z`, instead of inventing a time.
+
+Earlier revisions of the OKF v0.2 text and of this skill wrote `stale_after` and `sources[].last_modified` as `YYYY-MM-DD`. `validate_okf_bundle.py` reports such a value as a warning, so existing bundles still conform, while `validate_epic.py` rejects it. Whenever the workflow edits an EPIC that still carries one, convert it to midnight UTC of the same day.
 
 ## Trust events in this workflow
 

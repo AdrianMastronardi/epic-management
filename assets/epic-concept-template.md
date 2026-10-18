@@ -10,7 +10,7 @@ sources:
     resource: "{{URL_BUNDLE_PATH_OR_SCOPE_DESCRIPTOR}}"
     title: "{{SOURCE_TITLE}}"
     author: "{{ACTOR}}"
-    last_modified: "{{YYYY-MM-DD}}"
+    last_modified: "{{ISO_8601_UTC}}"
 epic_number: "{{NNN}}"
 epic_status: Active
 started_on: "{{YYYY-MM-DD}}"

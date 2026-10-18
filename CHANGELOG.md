@@ -16,6 +16,27 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-18
+
+### Skill
+
+- `references/okf-bundle.md`: documents `stale_after` and `sources[].last_modified` as ISO 8601 datetimes with an explicit UTC offset, as the current OKF v0.2 text requires, keeps `started_on` and `completed_on` as calendar days, and converts date-only values from the earlier text to midnight UTC whenever the workflow edits an EPIC.
+- `SKILL.md`: writes every OKF timestamp as an ISO 8601 datetime with an explicit UTC offset.
+
+### Templates
+
+- `assets/epic-concept-template.md`: prompts for `sources[].last_modified` as an ISO 8601 UTC datetime.
+
+### Validation
+
+- `scripts/okf.py`: validates `stale_after` and `sources[].last_modified` as ISO 8601 datetimes with an explicit UTC offset, rejects date-only values in the EPIC validator, and names the expected form when a datetime lacks its offset.
+- `scripts/validate_okf_bundle.py`: reports date-only `stale_after` and `sources[].last_modified` values written against the earlier OKF v0.2 text as warnings, which `--strict` turns into failures.
+- `tests/test_validators.py`: covers UTC-offset datetimes, values without an offset, impossible dates and times, and date-only values for both keys in both validators, and asserts that the EPIC template prompts for a datetime `last_modified`.
+
+### Documentation
+
+- `README.md`: lists date-only timestamps among the tolerances the bundle validator reports as warnings.
+
 ## [0.3.1] - 2026-10-18
 
 ### Skill
@@ -199,7 +220,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...v0.2.3

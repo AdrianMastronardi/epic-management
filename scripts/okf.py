@@ -291,15 +291,38 @@ def check_date(value, label: str, errors: list[str]) -> None:
 def check_datetime(value, label: str, errors: list[str]) -> None:
     text = as_text(value)
     if not DATETIME_RE.match(text):
-        errors.append(f"{label}: '{text}' is not an ISO 8601 datetime")
+        errors.append(
+            f"{label}: '{text}' is not an ISO 8601 datetime with an explicit "
+            "UTC offset, such as 2026-06-30T14:00:00Z"
+        )
         return
     try:
-        parsed = dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
+        dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError:
         errors.append(f"{label}: '{text}' is not a real ISO 8601 datetime")
+
+
+def check_timestamp(
+    value, label: str, errors: list[str], warnings: list[str] | None = None
+) -> None:
+    """Validate an OKF timestamp, which OKF v0.2 writes as a UTC-offset datetime.
+
+    A real date-only value follows the earlier v0.2 text. It is an error unless
+    the caller collects warnings, as the consumer-side bundle validator does.
+    """
+    text = as_text(value)
+    if not DATE_RE.match(text):
+        check_datetime(value, label, errors)
         return
-    if parsed.tzinfo is None:
-        errors.append(f"{label}: '{text}' must include a UTC offset")
+    try:
+        dt.date.fromisoformat(text)
+    except ValueError:
+        errors.append(f"{label}: '{text}' is not a real calendar date")
+        return
+    (errors if warnings is None else warnings).append(
+        f"{label}: '{text}' is date-only; OKF v0.2 requires an ISO 8601 datetime "
+        f"with an explicit UTC offset, such as {text}T00:00:00Z"
+    )
 
 
 def check_trust(
@@ -346,14 +369,25 @@ def check_status(document: Document, label: str, errors: list[str], stage: str) 
         )
 
 
-def check_stale_after(document: Document, label: str, errors: list[str]) -> None:
-    """Validate the optional stale_after; an absent or empty value sets no date."""
+def check_stale_after(
+    document: Document,
+    label: str,
+    errors: list[str],
+    warnings: list[str] | None = None,
+) -> None:
+    """Validate the optional stale_after; an absent or empty value sets no instant."""
     if as_text(document.get("stale_after")):
-        check_date(document.get("stale_after"), f"{label}: stale_after", errors)
+        check_timestamp(
+            document.get("stale_after"), f"{label}: stale_after", errors, warnings
+        )
 
 
 def check_sources(
-    document: Document, label: str, errors: list[str], required: bool
+    document: Document,
+    label: str,
+    errors: list[str],
+    required: bool,
+    warnings: list[str] | None = None,
 ) -> set[str]:
     """Validate the sources family and return the declared source identifiers."""
     entries = as_list(document.get("sources"))
@@ -378,10 +412,11 @@ def check_sources(
                 entry.get("author"), f"{label}: sources[{position}].author", errors
             )
         if entry.get("last_modified") is not None:
-            check_date(
+            check_timestamp(
                 entry.get("last_modified"),
                 f"{label}: sources[{position}].last_modified",
                 errors,
+                warnings,
             )
     return identifiers
 

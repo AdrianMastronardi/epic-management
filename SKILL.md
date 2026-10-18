@@ -103,7 +103,7 @@ tmp/EPIC-NNN-name/                     docs/epics/
 - Keep issue state in GitHub and full context in the bundle. Story concepts record the durable definition of the work and never mirror progress, assignee, or blocking state. When implementation scope changes later, update the issue; when design or rationale changes, amend the concept too.
 - Make every story issue a direct native GitHub sub-issue of the EPIC issue. A Markdown task list, issue link, label, milestone, or dependency edge is not a substitute. Parentage expresses decomposition; `blocked by` and `blocking` express only explicit execution dependencies.
 - Treat a story that already has another parent as a conflict. Never reparent it without a separate exact preview and explicit approval naming both parents.
-- Write real frontmatter. Take timestamps from the clock, derive actors from the active host and the repository git identity, and never invent a model name, a human identifier, a verification event, or a `stale_after` date.
+- Write real frontmatter. Take timestamps from the clock and write every OKF timestamp as an ISO 8601 datetime with an explicit UTC offset, derive actors from the active host and the repository git identity, and never invent a model name, a human identifier, a verification event, or a `stale_after` value.
 - Add a `human:<id>` entry to `verified` only when the user has actually approved that content at a checkpoint.
 - Use OKF `status` for the document lifecycle and `epic_status` for the execution lifecycle, and never collapse them. A published concept is `status: stable`; only `tmp/` carries `status: draft`.
 - Never label an EPIC or story a draft in prose, titles, or issue bodies. The `status: draft` frontmatter value is the OKF lifecycle marker for a working concept and is not a label.
@@ -152,7 +152,7 @@ Start from [assets/epic-concept-template.md](assets/epic-concept-template.md), [
 7. Put executable work in story descriptions, tasks, acceptance criteria, and quality checks. Keep cross-cutting decisions and invariants at EPIC level as well when every story must respect them.
 8. Keep postponed work visible as an explicit open question, exclusion, or future dependency; never omit it because it does not fit the current stories.
 9. Record the specification in `sources`, using a followable resource for durable material and a scope descriptor for a temporary file the workflow will retire. Attribute individual claims with footnotes keyed to `sources[].id`.
-10. Set `generated` from the active host, model, and current clock on every concept you write or meaningfully change. Leave `verified`, `resource`, and the published `status` for later phases. Omit the optional `stale_after` unless the source or the user states the date after which the EPIC's context must be re-checked.
+10. Set `generated` from the active host, model, and current clock on every concept you write or meaningfully change. Leave `verified`, `resource`, and the published `status` for later phases. Omit the optional `stale_after` unless the source or the user states when the EPIC's context must be re-checked.
 
 Use stable IDs for traceability, not as substitutes for prose. A story concept may reference a block by ID and link, but generated GitHub bodies must include the full applicable text.
 

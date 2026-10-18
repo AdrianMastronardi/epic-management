@@ -2,8 +2,9 @@
 """Validate an EPIC knowledge bundle against Open Knowledge Format v0.2.
 
 Errors are conformance failures or skill requirements. Warnings are the
-tolerances OKF grants consumers, such as broken cross-links; pass --strict to
-treat them as failures.
+tolerances OKF grants consumers, such as broken cross-links or date-only
+timestamps written against the earlier v0.2 text; pass --strict to treat them
+as failures.
 
 OKF makes log.md optional and this skill relies on git for history instead, so
 no log is required. One found in the bundle is still checked against the
@@ -121,7 +122,9 @@ def validate_index(path: Path, root: Path, errors: list[str]) -> None:
         errors.append(f"{label}: an index requires a heading")
 
 
-def validate_concept(path: Path, root: Path, errors: list[str]) -> None:
+def validate_concept(
+    path: Path, root: Path, errors: list[str], warnings: list[str]
+) -> None:
     label = relative(root, path)
     try:
         document = read_document(path)
@@ -139,9 +142,9 @@ def validate_concept(path: Path, root: Path, errors: list[str]) -> None:
             errors.append(f"{label}: status must be one of {', '.join(STATUS_VALUES)}")
     if document.has("generated") or document.has("verified"):
         check_trust(document, label, errors, require_human=False)
-    check_stale_after(document, label, errors)
+    check_stale_after(document, label, errors, warnings)
     if document.has("sources"):
-        check_sources(document, label, errors, required=False)
+        check_sources(document, label, errors, required=False, warnings=warnings)
 
 
 def validate_links(path: Path, root: Path, warnings: list[str]) -> None:
@@ -180,7 +183,7 @@ def validate(root: Path, strict: bool) -> tuple[list[str], list[str]]:
         validate_links(path, root, warnings)
 
     for path in iter_concepts(root):
-        validate_concept(path, root, errors)
+        validate_concept(path, root, errors, warnings)
 
     for directory in sorted(root.iterdir()):
         if not directory.is_dir() or not EPIC_DIRECTORY_RE.match(directory.name):
