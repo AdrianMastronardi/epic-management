@@ -4,11 +4,11 @@ Read this file before creating, editing, validating, or migrating any EPIC artif
 
 ## Bundle layout
 
-The published bundle root is `docs/epics/`. One EPIC is one directory inside it, and one story is one concept inside that directory.
+Published EPICs live in the EPIC collection at `docs/epics/`. One EPIC is one directory inside it, and one story is one concept inside that directory. The collection is either its own bundle or part of a larger one; see [Layouts](#layouts).
 
 ```text
-docs/epics/                                  # bundle root
-├── index.md                                 # reserved: bundle listing, declares okf_version
+docs/epics/                                  # EPIC collection
+├── index.md                                 # reserved: EPIC listing; okf_version per layout
 ├── backlog.md                               # concept: type EPIC Backlog (optional)
 ├── references/                              # optional: external material mirrored as concepts
 └── EPIC-020-durable-memory/                 # one directory per EPIC
@@ -28,6 +28,19 @@ tmp/EPIC-020-durable-memory/
 ```
 
 Name the EPIC directory `EPIC-NNN-<slug>` and each story concept `STORY-NNN-SSS-<slug>.md`, where `<slug>` is the lowercase kebab-case form of the title. Keeping the slug in the directory name preserves the previous `EPIC-NNN-name` convention and keeps `docs/epics/` readable without opening `index.md`.
+
+## Layouts
+
+The bundle root is the nearest directory at or above `docs/epics/` whose `index.md` declares `okf_version`. OKF permits frontmatter only in the bundle-root `index.md` and defines no nested bundles, so the EPIC collection takes one of two layouts:
+
+| Layout     | Bundle root                  | `docs/epics/index.md`                                              |
+| ---------- | ---------------------------- | ------------------------------------------------------------------ |
+| Standalone | `docs/epics/`                | Declares `okf_version: "0.2"`.                                     |
+| Embedded   | An ancestor, such as `docs/` | Carries no frontmatter; the ancestor's index declares the version. |
+
+Both layouts hold the same EPIC directories, concepts, and index body. Detect the layout from the repository and keep it: never add `okf_version` to `docs/epics/index.md` inside a larger bundle, and never mistake a frontmatter-less `docs/epics/index.md` for the legacy layout. When neither a bundle root nor the legacy layout exists, publication creates a standalone bundle.
+
+`tmp/` is the workflow's working area and never part of a bundle, even when the bundle root is the repository root. An EPIC directory under `tmp/` is a working copy, and the bundle validator skips `tmp/`.
 
 ## Reserved filenames
 
@@ -187,7 +200,7 @@ Link a specification block from a story with the block's anchor in the EPIC conc
 
 ## Index files
 
-Every directory in the bundle carries an `index.md` for progressive disclosure. The bundle root declares the format version, which is the only frontmatter any index file may have:
+Every directory in the bundle carries an `index.md` for progressive disclosure. Only the bundle-root index may carry frontmatter, and its only key is `okf_version`. In the standalone layout, the EPIC collection's index is that root index:
 
 ```markdown
 ---
@@ -201,9 +214,11 @@ okf_version: "0.2"
 - [EPIC-020 — Durable memory](EPIC-020-durable-memory/index.md) - Durable cross-session memory for the agent runtime.
 ```
 
+In the embedded layout, `docs/epics/index.md` has the same body without the frontmatter block. When the enclosing directory's index lists its subdirectories, it links the collection like any other subdirectory, for example `- [EPICs](epics/index.md) - Published EPICs.`
+
 OKF §8 illustrates sections as level-one headings. This skill uses one level-one title followed by level-two sections so the files pass a default markdownlint configuration in the host repository; the structure a consumer parses — sections of linked, described entries — is unchanged.
 
-Group the bundle-root index by `epic_status`, newest first inside each group, and take each entry's description from the linked concept's `description`. Add a final section linking `backlog.md` when the repository keeps a Markdown backlog. The index lists published EPICs only; future work without a published concept or issue belongs in the backlog authority.
+Group the EPIC collection's index by `epic_status`, newest first inside each group, and take each entry's description from the linked concept's `description`. Add a final section linking `backlog.md` when the repository keeps a Markdown backlog. The index lists published EPICs only; future work without a published concept or issue belongs in the backlog authority.
 
 An EPIC directory's `index.md` lists that EPIC's concepts:
 
@@ -237,11 +252,13 @@ Validate one EPIC directory, working or published:
 python3 scripts/validate_epic.py path/to/EPIC-NNN-name
 ```
 
-Validate the whole bundle:
+Validate the whole bundle by passing the EPIC collection, in either layout:
 
 ```sh
 python3 scripts/validate_okf_bundle.py docs/epics
 ```
+
+The bundle validator finds the bundle root at or above the collection and checks OKF conformance across the whole bundle except `tmp/`. It applies the EPIC checks to the collection — every EPIC directory listed in its `index.md` and holding `epic.md` and `index.md` — and reports an EPIC directory anywhere else in the bundle or an `okf_version` declared below the bundle root. `validate_epic.py` infers the published stage for an EPIC directory inside a bundle and the working stage under `tmp/` or outside any bundle; `--stage` overrides the inference.
 
 Neither validator proves semantic completeness. The section-by-section comparison against the source specification is still required at the coverage checkpoint.
 
@@ -261,4 +278,4 @@ Repositories created before this format keep a flat layout. The `migrate` operat
 | Index completion paragraphs        | `## Final verification`, `## Findings`, and `## Exit state` in the EPIC concept.                   |
 | `docs/epic-backlog.md`             | `docs/epics/backlog.md` with `type: EPIC Backlog` frontmatter.                                     |
 
-Migration is lossless: every sentence in a legacy index entry must land in a named destination above, and any in-repository reference to a moved path must be updated in the same change.
+Migration is lossless: every sentence in a legacy index entry must land in a named destination above, and any in-repository reference to a moved path must be updated in the same change. Write `docs/epics/index.md` in the layout the repository already has: without frontmatter when an ancestor is the bundle root, and as a standalone bundle root otherwise.

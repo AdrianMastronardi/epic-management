@@ -476,6 +476,87 @@ Implement the example.
         for source in okf.as_list(epic_template.get("sources")):
             self.assertEqual(source["last_modified"], "{{ISO_8601_UTC}}")
 
+    def embed_collection(self, epic: Path, root: Path | None = None) -> Path:
+        """Move the bundle root from docs/epics to an ancestor, docs/ by default."""
+        collection = epic.parent
+        root = root or collection.parent
+        index = collection / "index.md"
+        body = index.read_text(encoding="utf-8").split("---\n", 2)[2].lstrip()
+        index.write_text(body, encoding="utf-8")
+        self.write(
+            root / "index.md",
+            '---\nokf_version: "0.2"\n---\n\n# Documentation\n\n'
+            f"- [EPICs]({collection.relative_to(root).as_posix()}/index.md) - Published EPICs.\n",
+        )
+        return root
+
+    def test_embedded_collection_is_published_and_valid(self) -> None:
+        epic = self.create_epic()
+        self.embed_collection(epic)
+        self.assertEqual(okf.infer_stage(epic), "published")
+        self.assertEqual(validate_epic(epic, None), [])
+        self.assertEqual(validate_bundle(epic.parent, strict=True), ([], []))
+
+    def test_embedded_collection_keeps_epic_checks(self) -> None:
+        epic = self.create_epic()
+        self.embed_collection(epic)
+        index = epic.parent / "index.md"
+        index.write_text("# EPIC index\n", encoding="utf-8")
+        (epic / "epic.md").unlink()
+        errors, _ = validate_bundle(epic.parent, strict=False)
+        self.assertIn(
+            f"epics/index.md: {EPIC_DIRECTORY} is published but not listed", errors
+        )
+        self.assertIn(f"epics/{EPIC_DIRECTORY}: missing epic.md", errors)
+        index.unlink()
+        errors, _ = validate_bundle(epic.parent, strict=False)
+        self.assertTrue(
+            any("EPIC collection requires an index" in error for error in errors)
+        )
+
+    def test_embedded_collection_index_rejects_frontmatter(self) -> None:
+        epic = self.create_epic()
+        self.embed_collection(epic)
+        index = epic.parent / "index.md"
+        index.write_text(
+            '---\nokf_version: "0.2"\n---\n\n' + index.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        errors, _ = validate_bundle(epic.parent, strict=False)
+        self.assertTrue(
+            any(
+                error.startswith("index.md: ../index.md already declares okf_version")
+                for error in errors
+            ),
+            errors,
+        )
+        errors, _ = validate_bundle(epic.parent.parent, strict=False)
+        self.assertIn(
+            "epics/index.md: only the bundle root index may carry frontmatter", errors
+        )
+
+    def test_bundle_root_reports_epics_outside_the_collection(self) -> None:
+        epic = self.create_epic()
+        root = self.embed_collection(epic)
+        errors, _ = validate_bundle(root, strict=False)
+        self.assertTrue(
+            any(
+                error.startswith(f"epics/{EPIC_DIRECTORY}: EPIC directory outside")
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_working_epic_stays_working_under_a_repository_bundle_root(self) -> None:
+        published = self.create_epic()
+        self.embed_collection(published, root=self.root)
+        working = self.create_epic(published=False)
+        self.assertEqual(okf.infer_stage(published), "published")
+        self.assertEqual(okf.infer_stage(working), "working")
+        self.assertEqual(validate_epic(working, None), [])
+        self.assertEqual(validate_epic(published, None), [])
+        self.assertEqual(validate_bundle(published.parent, strict=True), ([], []))
+
     def test_bundle_index_accepts_dot_prefixed_epic_link(self) -> None:
         epic = self.create_epic(dot_prefix=True)
         errors, warnings = validate_bundle(epic.parent, strict=True)

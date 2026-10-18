@@ -36,6 +36,7 @@ LEADING_ZERO_INTEGER_RE = re.compile(r"^[+-]?0\d+$")
 STATUS_VALUES = ("draft", "stable", "deprecated")
 EPIC_STATUS_VALUES = ("Active", "Blocked", "Completed", "Cancelled")
 RESERVED_NAMES = ("index.md", "log.md")
+WORKING_DIRECTORY = "tmp"
 OKF_VERSION = "0.2"
 
 
@@ -475,9 +476,21 @@ def section_bounds(
     return start, end
 
 
-def iter_concepts(root: Path):
-    """Yield every non-reserved markdown file in a bundle, sorted by path."""
+def in_working_area(path: Path, root: Path) -> bool:
+    """Whether path, which lies under root, sits in a tmp/ working area."""
+    return WORKING_DIRECTORY in path.relative_to(root).parts
+
+
+def iter_markdown(root: Path):
+    """Yield every markdown file in a bundle outside tmp/, sorted by path."""
     for path in sorted(root.rglob("*.md")):
+        if not in_working_area(path, root):
+            yield path
+
+
+def iter_concepts(root: Path):
+    """Yield every non-reserved markdown file in a bundle outside tmp/, sorted by path."""
+    for path in iter_markdown(root):
         if path.name not in RESERVED_NAMES:
             yield path
 
@@ -494,6 +507,23 @@ def is_bundle_root(path: Path) -> bool:
     return "okf_version" in document.data
 
 
+def find_bundle_root(path: Path) -> Path | None:
+    """Return the nearest directory at or above path that is a bundle root."""
+    resolved = path.resolve()
+    for candidate in (resolved, *resolved.parents):
+        if is_bundle_root(candidate):
+            return candidate
+    return None
+
+
 def infer_stage(directory: Path) -> str:
-    """An EPIC directory is published when it sits inside a bundle root."""
-    return "published" if is_bundle_root(directory.resolve().parent) else "working"
+    """An EPIC directory is published when it sits inside a bundle, outside tmp/.
+
+    The bundle root may be the EPIC collection itself or any ancestor of it, so
+    a collection embedded in a larger bundle is recognized as published too.
+    """
+    directory = directory.resolve()
+    root = find_bundle_root(directory.parent)
+    if root is None or in_working_area(directory, root):
+        return "working"
+    return "published"

@@ -16,6 +16,24 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-18
+
+### Skill
+
+- `references/github-publication.md`: creates the EPIC index without frontmatter in the embedded layout and links the collection from the enclosing index when that index lists its subdirectories.
+- `references/okf-bundle.md`: defines the standalone and embedded layouts of the EPIC collection, keeps `tmp/` outside every bundle, describes the embedded EPIC index and its migration, and states what each validator checks in either layout.
+- `SKILL.md`: finds the bundle root at or above `docs/epics/`, recognizes an EPIC collection embedded in a larger bundle without mistaking it for the legacy layout, and drops the index template's frontmatter when publishing into it.
+
+### Validation
+
+- `scripts/okf.py`: infers the published stage for an EPIC directory inside a bundle whose root is its collection or any ancestor, keeps the working stage under `tmp/` even when the repository root is the bundle root, and skips `tmp/` when walking a bundle.
+- `scripts/validate_okf_bundle.py`: takes the EPIC collection in both layouts, validates the whole enclosing bundle except `tmp/`, applies the listing and file checks to the collection, and rejects EPIC directories outside the collection and `okf_version` declared below the bundle root.
+- `tests/test_validators.py`: covers stage inference and validation in the embedded layout, unlisted EPICs and missing files or indexes, a nested `okf_version`, EPIC directories outside the collection, and a working EPIC under a repository-root bundle.
+
+### Documentation
+
+- `README.md`: describes both layouts and how to validate them.
+
 ## [0.3.2] - 2026-10-18
 
 ### Skill
@@ -220,7 +238,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...v0.3.0

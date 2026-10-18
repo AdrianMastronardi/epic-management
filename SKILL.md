@@ -131,7 +131,7 @@ If the EPIC number, name, source file, or repository is genuinely ambiguous, ask
 
 Read the applicable repository guidance files, the EPIC bundle, architecture documentation implicated by the source, and any existing EPIC command. Treat repository documentation as validation context, not as permission to add scope.
 
-Detect the layout before writing anything. When `docs/epics/index.md` declares `okf_version`, the bundle exists. When only `docs/epic-index.md` or frontmatter-less `docs/epics/*.md` files exist, the repository is on the legacy layout and needs `migrate` before or during publication.
+Detect the layout before writing anything, as defined in [references/okf-bundle.md](references/okf-bundle.md#layouts). The bundle root is the nearest directory at or above `docs/epics/` whose `index.md` declares `okf_version`: `docs/epics/` itself in the standalone layout, or an ancestor such as `docs/` when the EPIC collection is embedded in a larger bundle and `docs/epics/index.md` carries no frontmatter. When `docs/epic-index.md` or flat `docs/epics/EPIC-NNN-name.md` files without frontmatter exist, the repository is on the legacy layout and needs `migrate` before or during publication; a frontmatter-less `docs/epics/index.md` alone is not evidence of it.
 
 Read the declared source specification completely. If several files jointly define the specification, require the user to choose whether they form one EPIC; once chosen, consolidate all of them into the single EPIC concept.
 
@@ -210,13 +210,15 @@ Generate issue bodies from the approved concepts:
 
 Use deterministic titles for idempotence. Detect existing EPIC, story, parent/sub-issue, dependency, branch, and PR state before creating anything. On `resume`, establish delivery evidence before adding a native dependency edge, as defined in [references/story-decomposition.md](references/story-decomposition.md#project-dependencies-into-github). On partial failure, resume from remote state and verify bodies and relationships before patching.
 
-After exact-write approval, create or reuse the GitHub issues and move the approved directory to `docs/epics/EPIC-NNN-name/`. Then set `status: stable` on every concept, write each issue URL into the EPIC's `resource`, each `stories[].resource`, and each story concept's `resource`, and update the bundle. When `docs/epics/index.md` does not exist, create it from [assets/bundle-index-template.md](assets/bundle-index-template.md), adapt its language to the repository, and resolve or remove every placeholder. Add the EPIC to the index group matching its `epic_status`, newest first. Preserve an existing index's language and ordering. Never add future work without a published concept or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epics/backlog.md` from [assets/backlog-concept-template.md](assets/backlog-concept-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the published concept contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
+After exact-write approval, create or reuse the GitHub issues and move the approved directory to `docs/epics/EPIC-NNN-name/`. Then set `status: stable` on every concept, write each issue URL into the EPIC's `resource`, each `stories[].resource`, and each story concept's `resource`, and update the bundle. When `docs/epics/index.md` does not exist, create it from [assets/bundle-index-template.md](assets/bundle-index-template.md), adapt its language to the repository, and resolve or remove every placeholder. In the embedded layout, drop the template's frontmatter block, and when the enclosing directory's index lists its subdirectories, add an entry linking the collection. Add the EPIC to the index group matching its `epic_status`, newest first. Preserve an existing index's language and ordering. Never add future work without a published concept or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epics/backlog.md` from [assets/backlog-concept-template.md](assets/backlog-concept-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the published concept contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
 
 Validate the bundle before committing:
 
 ```sh
 python3 <resolved-skill-root>/scripts/validate_okf_bundle.py docs/epics
 ```
+
+Pass `docs/epics` in both layouts; in the embedded layout the validator also checks the enclosing bundle.
 
 Every published EPIC appears in `docs/epics/index.md` as a linked entry under its status group. Issue links, dates, story links, notes, and closure evidence live in the EPIC concept, not in the index. Use the repository's controlled status vocabulary for `epic_status`; when none exists, use only `Active`, `Blocked`, `Completed`, or `Cancelled`. While the EPIC remains active, omit the completion-only `## Final verification`, `## Findings`, and `## Exit state` sections.
 
@@ -290,7 +292,7 @@ Finish `help` or `inspect` without local or remote mutations.
 ## Resources
 
 - [assets/backlog-concept-template.md](assets/backlog-concept-template.md) — copy only when the repository uses a Markdown backlog and source backlog content exists.
-- [assets/bundle-index-template.md](assets/bundle-index-template.md) — copy and adapt only when publication or migration must create a missing bundle index.
+- [assets/bundle-index-template.md](assets/bundle-index-template.md) — copy and adapt only when publication or migration must create a missing `docs/epics/index.md`; drop its frontmatter in the embedded layout.
 - [assets/epic-concept-template.md](assets/epic-concept-template.md) — copy and fill when preparing the EPIC concept.
 - [assets/epic-index-template.md](assets/epic-index-template.md) — copy and fill for each EPIC directory's index.
 - [assets/story-concept-template.md](assets/story-concept-template.md) — copy and fill for each story concept.

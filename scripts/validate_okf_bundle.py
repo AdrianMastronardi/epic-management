@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Validate an EPIC knowledge bundle against Open Knowledge Format v0.2.
 
+Pass the EPIC collection, normally docs/epics. It is either the bundle root or
+a directory inside a larger bundle rooted at an ancestor; either way the whole
+bundle is checked, except the tmp/ working area.
+
 Errors are conformance failures or skill requirements. Warnings are the
 tolerances OKF grants consumers, such as broken cross-links or date-only
 timestamps written against the earlier v0.2 text; pass --strict to treat them
@@ -14,6 +18,7 @@ structure OKF defines for the reserved filename.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path, PurePosixPath
@@ -27,8 +32,11 @@ from okf import (
     check_sources,
     check_stale_after,
     check_trust,
+    find_bundle_root,
     has_frontmatter,
+    in_working_area,
     iter_concepts,
+    iter_markdown,
     read_document,
     STATUS_VALUES,
 )
@@ -51,6 +59,38 @@ def first_path_part(target: str) -> str:
         (part for part in PurePosixPath(head).parts if part not in {".", "/"}),
         "",
     )
+
+
+def index_links(document) -> set[str]:
+    """Return the first path segment of every local link in an index."""
+    return {
+        first_path_part(target)
+        for target in LINK_RE.findall(document.body_text)
+        if not target.startswith(("http://", "https://", "mailto:", "#"))
+        and first_path_part(target)
+    }
+
+
+def validate_collection_index(
+    collection: Path, root: Path, errors: list[str]
+) -> set[str]:
+    """Read the index of an EPIC collection embedded below the bundle root.
+
+    Its frontmatter and heading are checked with every other non-root index.
+    """
+    path = collection / "index.md"
+    label = relative(root, path)
+    if not path.is_file():
+        errors.append(
+            f"{label}: the EPIC collection requires an index listing published EPICs"
+        )
+        return set()
+    try:
+        document = read_document(path)
+    except (FrontmatterError, OSError) as error:
+        errors.append(str(error))
+        return set()
+    return index_links(document)
 
 
 def validate_root_index(root: Path, errors: list[str], warnings: list[str]) -> set[str]:
@@ -80,12 +120,7 @@ def validate_root_index(root: Path, errors: list[str], warnings: list[str]) -> s
             )
     if not any(line.startswith("# ") for line in document.body):
         errors.append("index.md: an index requires a heading")
-    return {
-        first_path_part(target)
-        for target in LINK_RE.findall(document.body_text)
-        if not target.startswith(("http://", "https://", "mailto:", "#"))
-        and first_path_part(target)
-    }
+    return index_links(document)
 
 
 def validate_log(path: Path, root: Path, errors: list[str]) -> None:
@@ -167,15 +202,33 @@ def validate_links(path: Path, root: Path, warnings: list[str]) -> None:
             )
 
 
-def validate(root: Path, strict: bool) -> tuple[list[str], list[str]]:
+def validate(collection: Path, strict: bool) -> tuple[list[str], list[str]]:
+    """Validate the bundle around an EPIC collection, normally docs/epics.
+
+    The bundle root is the collection itself or, when the collection is
+    embedded in a larger bundle, the nearest ancestor that declares
+    okf_version. Conformance covers the whole bundle outside tmp/; the EPIC
+    checks cover the collection.
+    """
     errors: list[str] = []
     warnings: list[str] = []
-    if not root.is_dir():
-        return [f"{root} is not a directory"], []
+    if not collection.is_dir():
+        return [f"{collection} is not a directory"], []
+    collection = collection.resolve()
+    root = find_bundle_root(collection) or collection
+    enclosing = find_bundle_root(root.parent) if root.parent != root else None
+    if enclosing is not None:
+        errors.append(
+            f"index.md: {os.path.relpath(enclosing / 'index.md', root)} already "
+            "declares okf_version, so this index sits inside that bundle and "
+            "may not declare it"
+        )
 
     linked = validate_root_index(root, errors, warnings)
+    if collection != root:
+        linked = validate_collection_index(collection, root, errors)
 
-    for path in sorted(root.rglob("*.md")):
+    for path in iter_markdown(root):
         if path.name == "index.md" and path != root / "index.md":
             validate_index(path, root, errors)
         elif path.name == "log.md":
@@ -185,15 +238,29 @@ def validate(root: Path, strict: bool) -> tuple[list[str], list[str]]:
     for path in iter_concepts(root):
         validate_concept(path, root, errors, warnings)
 
-    for directory in sorted(root.iterdir()):
+    listing = relative(root, collection / "index.md")
+    for directory in sorted(collection.iterdir()):
         if not directory.is_dir() or not EPIC_DIRECTORY_RE.match(directory.name):
             continue
+        label = relative(root, directory)
         if directory.name not in linked:
-            errors.append(f"index.md: {directory.name} is published but not listed")
+            errors.append(f"{listing}: {directory.name} is published but not listed")
         if not (directory / "epic.md").is_file():
-            errors.append(f"{directory.name}: missing epic.md")
+            errors.append(f"{label}: missing epic.md")
         if not (directory / "index.md").is_file():
-            errors.append(f"{directory.name}: missing index.md")
+            errors.append(f"{label}: missing index.md")
+
+    for directory in sorted(root.rglob("EPIC-*")):
+        if (
+            directory.is_dir()
+            and EPIC_DIRECTORY_RE.match(directory.name)
+            and directory.parent != collection
+            and not in_working_area(directory, root)
+        ):
+            errors.append(
+                f"{relative(root, directory)}: EPIC directory outside the "
+                "validated EPIC collection; pass its parent directory instead"
+            )
 
     if strict:
         errors.extend(warnings)
@@ -206,21 +273,24 @@ def main() -> int:
         description="Validate an OKF EPIC knowledge bundle."
     )
     parser.add_argument(
-        "bundle_root", type=Path, help="bundle root, normally docs/epics"
+        "epics",
+        type=Path,
+        help="EPIC collection, normally docs/epics; the bundle root is the "
+        "nearest directory at or above it whose index.md declares okf_version",
     )
     parser.add_argument(
         "--strict", action="store_true", help="treat warnings as failures"
     )
     args = parser.parse_args()
 
-    errors, warnings = validate(args.bundle_root, args.strict)
+    errors, warnings = validate(args.epics, args.strict)
     for warning in warnings:
         print(f"WARNING: {warning}", file=sys.stderr)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
-    print(f"epic-management: {args.bundle_root} conforms to OKF v{OKF_VERSION}")
+    print(f"epic-management: {args.epics} conforms to OKF v{OKF_VERSION}")
     return 0
 
 

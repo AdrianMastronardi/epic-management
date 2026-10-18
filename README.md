@@ -97,11 +97,11 @@ Preparation and refinement review story boundaries to enable earlier verifiable 
 
 ## Bundle model
 
-The published bundle root is `docs/epics/`. One EPIC is one concept directory; one story is one concept inside it.
+Published EPICs live in `docs/epics/`, which is either its own OKF bundle or a directory inside a larger bundle rooted at an ancestor such as `docs/`. One EPIC is one concept directory; one story is one concept inside it.
 
 ```text
 docs/epics/
-├── index.md                                   # bundle listing, declares okf_version
+├── index.md                                   # EPIC listing; declares okf_version when standalone
 ├── backlog.md                                 # optional, type EPIC Backlog
 └── EPIC-020-durable-memory/
     ├── index.md                               # listing of this EPIC's concepts
@@ -146,7 +146,7 @@ Validate one EPIC concept directory, working or published:
 python3 scripts/validate_epic.py path/to/EPIC-NNN-name
 ```
 
-Validate the whole bundle against OKF v0.2:
+Validate the whole bundle against OKF v0.2, passing the EPIC collection whether it is the bundle root or sits inside a larger bundle:
 
 ```sh
 python3 scripts/validate_okf_bundle.py docs/epics
@@ -177,7 +177,7 @@ epic-management/
 │   └── openai.yaml  # Codex discovery metadata
 ├── assets/
 │   ├── backlog-concept-template.md  # optional EPIC Backlog concept
-│   ├── bundle-index-template.md  # bundle root index
+│   ├── bundle-index-template.md  # EPIC collection index
 │   ├── epic-concept-template.md  # canonical EPIC concept
 │   ├── epic-index-template.md  # per-EPIC directory index
 │   └── story-concept-template.md  # canonical Story concept
