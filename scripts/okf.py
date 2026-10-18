@@ -347,7 +347,8 @@ def check_status(document: Document, label: str, errors: list[str], stage: str) 
 
 
 def check_stale_after(document: Document, label: str, errors: list[str]) -> None:
-    if document.has("stale_after") and document.get("stale_after") is not None:
+    """Validate the optional stale_after; an absent or empty value sets no date."""
+    if as_text(document.get("stale_after")):
         check_date(document.get("stale_after"), f"{label}: stale_after", errors)
 
 

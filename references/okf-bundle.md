@@ -55,7 +55,7 @@ The EPIC concept remains the single home of the specification text. Story concep
 | `status`       | Always            | OKF document lifecycle: `draft` under `tmp/`, `stable` once published, `deprecated` once superseded.              |
 | `generated`    | Always            | `{ by: <actor>, at: <ISO 8601 UTC> }` for the last meaningful content change.                                     |
 | `verified`     | After approval    | List of `{ by: <actor>, at: <ISO 8601 UTC> }`. The coverage checkpoint adds the human entry.                      |
-| `stale_after`  | Optional          | Absolute `YYYY-MM-DD` after which the EPIC's context must be re-checked. Remove when it does not apply.           |
+| `stale_after`  | Optional          | Absolute `YYYY-MM-DD` to re-check the EPIC's context. Omit it unless the source or the user states one.           |
 | `sources`      | Always            | The materials the EPIC was built from. See [Sources](#sources).                                                   |
 | `epic_number`  | Always            | The three-digit number, quoted so the leading zero survives.                                                      |
 | `epic_status`  | Always            | Execution lifecycle: `Active`, `Blocked`, `Completed`, or `Cancelled`, or the repository's controlled vocabulary. |

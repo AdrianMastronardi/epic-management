@@ -5,7 +5,6 @@ description: "{{ONE_SENTENCE_OUTCOME}}"
 tags: [epic, "{{TAG}}"]
 status: draft
 generated: { by: "{{HOST}}/{{MODEL}}", at: "{{ISO_8601_UTC}}" }
-stale_after: "{{YYYY-MM-DD_OR_REMOVE}}"
 sources:
   - id: "{{SOURCE_ID}}"
     resource: "{{URL_BUNDLE_PATH_OR_SCOPE_DESCRIPTOR}}"

@@ -401,6 +401,38 @@ Implement the example.
             )
         )
 
+    def test_stale_after_is_optional(self) -> None:
+        for line, valid in (
+            ("", True),
+            ("stale_after:\n", True),
+            ('stale_after: ""\n', True),
+            ("stale_after: 2027-01-31\n", True),
+            ('stale_after: "2027-02-31"\n', False),
+        ):
+            with self.subTest(line=line):
+                epic = self.create_epic()
+                path = epic / "epic.md"
+                text = path.read_text(encoding="utf-8").replace(
+                    "sources:\n", line + "sources:\n", 1
+                )
+                path.write_text(text, encoding="utf-8")
+                errors = validate_epic(epic, None)
+                bundle_errors, _ = validate_bundle(epic.parent, strict=False)
+                if valid:
+                    self.assertEqual(errors, [])
+                    self.assertEqual(bundle_errors, [])
+                else:
+                    self.assertTrue(any("stale_after" in error for error in errors))
+                    self.assertTrue(
+                        any("stale_after" in error for error in bundle_errors)
+                    )
+
+    def test_epic_template_omits_optional_stale_after(self) -> None:
+        epic_template = okf.read_document(
+            PROJECT_ROOT / "assets" / "epic-concept-template.md"
+        )
+        self.assertFalse(epic_template.has("stale_after"))
+
     def test_bundle_index_accepts_dot_prefixed_epic_link(self) -> None:
         epic = self.create_epic(dot_prefix=True)
         errors, warnings = validate_bundle(epic.parent, strict=True)

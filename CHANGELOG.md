@@ -16,6 +16,22 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-18
+
+### Skill
+
+- `references/okf-bundle.md`: states that the optional `stale_after` is omitted unless the source or the user states the re-check date.
+- `SKILL.md`: omits `stale_after` during preparation unless a real re-check date is supplied, and forbids inventing one.
+
+### Templates
+
+- `assets/epic-concept-template.md`: drops the `stale_after` placeholder so new EPICs no longer carry a re-check date by default.
+
+### Validation
+
+- `scripts/okf.py`: treats an empty `stale_after` as absent instead of demanding a date.
+- `tests/test_validators.py`: covers absent, empty, valid, and invalid `stale_after` values in both validators, and asserts that the EPIC template omits the field.
+
 ## [0.3.0] - 2026-10-05
 
 ### Skill
@@ -183,7 +199,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.2.1...v0.2.2
