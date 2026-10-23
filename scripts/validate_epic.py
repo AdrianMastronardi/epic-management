@@ -40,6 +40,7 @@ STORY_TITLE_RE = re.compile(r"^STORY-(\d{3})-(\d{3}) — \S")
 STORY_FILE_RE = re.compile(r"^(STORY-(\d{3})-(\d{3}))-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 SPEC_RE = re.compile(r"^### (SPEC-(\d{3})-(\d{3})):\s+\S")
 STORY_ID_RE = re.compile(r"^STORY-(\d{3})-(\d{3})$")
+STORY_REFERENCE_RE = re.compile(r"(?<![\w-])STORY-\d{3}-\d{3}(?![\w-])", re.IGNORECASE)
 SPEC_FRAGMENT_RE = re.compile(r"^(spec-\d{3}-\d{3})(?:-|$)", re.IGNORECASE)
 SPEC_REFERENCE_RE = re.compile(r"(?<![\w-])SPEC-[\w-]+")
 
@@ -122,7 +123,7 @@ def parse_distribution(document: Document, errors: list[str]) -> list[Distributi
     return rows
 
 
-def native_cycle(edges: dict[str, set[str]]) -> list[str]:
+def dependency_cycle(edges: dict[str, set[str]]) -> list[str]:
     """Return one cycle among consumer -> producer edges, or an empty list."""
     finished: set[str] = set()
 
@@ -164,18 +165,41 @@ def dependency_cells(line: str) -> list[str]:
     return cells
 
 
+def dependency_story_id(value: str, role: str, where: str, errors: list[str]) -> str:
+    """Require bare IDs, retaining recognizable edges for cycle diagnostics."""
+    identifiers = sorted(
+        {identifier.upper() for identifier in STORY_REFERENCE_RE.findall(value)}
+    )
+    if not identifiers or value in identifiers:
+        return value
+    if len(identifiers) != 1:
+        errors.append(f"{where}: {role} must name a single story identifier")
+        return value
+    identifier = identifiers[0]
+    errors.append(
+        f"{where}: {role} must use the bare story identifier {identifier}; "
+        "use an issue URL for a prerequisite in another EPIC"
+    )
+    return identifier
+
+
 def validate_dependencies(
     document: Document,
     declared: list[str],
-    rows_by_block: dict[str, Distribution],
+    rows_by_block: dict[str, Distribution] | None,
     errors: list[str],
 ) -> None:
-    """Check the optional dependency table; prose-only sections are not inspected."""
+    """Check all internal table dependencies, without interpreting prose.
+
+    Reuse the EPIC validator's distribution map, or parse it lazily when the
+    bundle validator encounters a table so prose-only OKF documents stay valid.
+    """
     if "## Dependencies" not in document.body:
         return
     start, end = section_bounds(document.body, "## Dependencies")
     in_table = False
-    native: dict[str, set[str]] = {}
+    dependencies: dict[str, set[str]] = {}
+    details: dict[tuple[str, str], list[str]] = {}
     for index in range(start + 1, end):
         line = document.body[index].strip()
         if not line.startswith("|"):
@@ -194,6 +218,18 @@ def validate_dependencies(
                     "Output, Phase, Release condition, Projection, Spec"
                 )
                 return
+            if rows_by_block is None:
+                if "## GitHub distribution" not in document.body:
+                    errors.append(
+                        "epic.md: a dependency table requires a GitHub distribution "
+                        "section to resolve SPEC routing"
+                    )
+                    rows_by_block = {}
+                else:
+                    rows_by_block = {
+                        row.block_id: row
+                        for row in parse_distribution(document, errors)
+                    }
             continue
         if all(cell and set(cell) <= {"-", ":"} for cell in cells):
             continue
@@ -201,6 +237,8 @@ def validate_dependencies(
             errors.append(f"{where}: dependency row must have seven columns")
             continue
         producer, consumer, output, phase, release, projection, spec = cells
+        producer = dependency_story_id(producer, "producer", where, errors)
+        consumer = dependency_story_id(consumer, "consumer", where, errors)
         phase = phase.lower()
         projection = projection.lower()
         internal = producer.upper().startswith("STORY-")
@@ -212,6 +250,11 @@ def validate_dependencies(
             errors.append(f"{where}: consumer {consumer} is not a declared story")
         if internal and producer == consumer:
             errors.append(f"{where}: {consumer} cannot depend on itself")
+        if internal and producer in declared and consumer in declared:
+            dependencies.setdefault(consumer, set()).add(producer)
+            details.setdefault((consumer, producer), []).append(
+                f"{where}, phase={phase}, projection={projection}"
+            )
         if not output or not release:
             errors.append(
                 f"{where}: dependency requires an output and a release condition"
@@ -230,8 +273,6 @@ def validate_dependencies(
                     f"{where}: a native projection requires a start-phase dependency "
                     "on a declared story"
                 )
-            elif producer in declared and consumer in declared:
-                native.setdefault(consumer, set()).add(producer)
         blocks = SPEC_REFERENCE_RE.findall(spec)
         if not blocks:
             errors.append(f"{where}: dependency must reference a SPEC block")
@@ -243,11 +284,16 @@ def validate_dependencies(
                 errors.append(f"{where}: {block_id} must be operational")
             elif consumer in declared and consumer not in row.destinations:
                 errors.append(f"{where}: {block_id} is not routed to {consumer}")
-    cycle = native_cycle(native)
+    cycle = dependency_cycle(dependencies)
     if cycle:
+        context = "; ".join(
+            f"{consumer} requires {producer} [{', '.join(details[consumer, producer])}]"
+            for consumer, producer in zip(cycle, cycle[1:])
+        )
         errors.append(
-            "epic.md: native dependency projections form a cycle: "
-            + " blocked by ".join(cycle)
+            "epic.md: story dependencies form a cycle: "
+            + " requires ".join(cycle)
+            + f" ({context})"
         )
 
 

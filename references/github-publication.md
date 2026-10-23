@@ -12,12 +12,14 @@ Cross that boundary only after the exact-write checkpoint is approved. `resume` 
 
 - Read the repository's agent guidance, contribution rules, label catalog, protected-branch policy, versioning rules, and required checks.
 - Confirm that `scripts/validate_epic.py` passes for the working directory.
+- When the EPIC collection already has an index or published EPIC directories, run `scripts/validate_okf_bundle.py` on it before the exact-write checkpoint and any publication write. Resolve existing failures in a separately previewed repair first; a historical cycle can block an otherwise unrelated publication. A target with neither an index nor published EPICs is a new collection whose planned bundle is validated after its approved creation. Do not discover an existing-bundle conflict only after creating issues or the documentation branch.
 - Confirm that a new publication starts from the single approved `tmp/EPIC-NNN-name/` directory and that nothing was pre-created inside `docs/epics/`.
 - Confirm that every concept carries a human `verified` entry recorded at the coverage checkpoint.
 - Confirm that the working tree is clean or that every existing change is understood and preserved.
 - Confirm that the EPIC number and deterministic titles do not collide with unrelated resources.
 - Confirm that no generated body refers to `tmp/`.
 - Confirm that the issue-body previews pass the independent-agent review in [implementation-handoff.md](implementation-handoff.md), including decisions added or changed during refinement.
+- Before the first affected issue, relationship, branch, PR, or local publication mutation, confirm that the complete logical story graph is acyclic across all phases and projections. Reconcile the approved table, routed specification, tasks, acceptance gates, previews, and known existing dependencies, including necessary cross-EPIC return paths. Resolve cycles or uncertainty before affected writes; a native-only DAG is insufficient. Legacy prose-only plans need normalization or semantic review before affected dependency or issue-body writes. Follow the [graph review](story-decomposition.md#store-and-present-the-plan) and [identity-preserving repair](story-decomposition.md#require-an-acyclic-story-dependency-graph) guidance for partially published plans.
 - Confirm that a native sub-issue transport is available and record which CLI or API path publication will use. Do not probe write permission with an unapproved mutation.
 - Detect the layout. When the repository still uses the legacy flat layout, migrate it first under the `migrate` protocol in `SKILL.md`, or fold the migration into this exact-write preview with the user's approval.
 
@@ -62,14 +64,15 @@ Search all states, not only open resources:
 3. Read the EPIC's native sub-issues in priority order and the current parent of every reused story.
 4. Find the documentation branch and open PR.
 5. Compare titles, labels, parentage, native child order, approved dependency projections, bodies, head SHA, and base branch. Check delivery evidence before treating a prerequisite as satisfied; an issue's closed state alone is insufficient. Do not recreate a satisfied blocker from the durable graph during `resume`. A closed producer without delivery evidence is a conflict to resolve at the existing checkpoint before applying its dependency actions, as defined in [story-decomposition.md](story-decomposition.md#project-dependencies-into-github).
-6. Classify each resource and relationship as absent, current, stale, or conflicting. Classify an approved native dependency as satisfied when its edge is absent and delivery evidence shows the prerequisite was met: it needs no write and is not absent on later resumes. Report a dependency without an approved projection as unclassified and leave its existing edges in place.
+6. Classify each resource and relationship as absent, current, stale, or conflicting. Classify an approved native dependency as satisfied when its edge is absent and delivery evidence shows the prerequisite was met: it needs no write and is not absent on later resumes. Report a dependency without an approved projection as unclassified and leave its existing edges in place. An observed cycle blocks affected writes pending an approved plan correction; do not silently remove an edge or create replacement identities.
 
 Treat a matching deterministic identity with different semantics as a conflict, not a resource to overwrite.
 
 ## Exact-write checkpoint
 
-Before the first remote mutation, show:
+Before the first affected local or remote publication mutation, show:
 
+- the complete-graph acyclicity result, reconciled sources, and any cross-EPIC paths inspected or still unknown;
 - EPIC title, labels, and complete body preview;
 - every story title, labels, and complete body preview;
 - every planned native parent/sub-issue action, current parent, final child priority, and dependency edge, keeping parentage and dependencies separate;

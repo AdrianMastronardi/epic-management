@@ -102,6 +102,7 @@ tmp/EPIC-NNN-name/                     docs/epics/
 - Allow `context` blocks to remain only in the EPIC concept, but classify that choice explicitly.
 - Keep issue state in GitHub and full context in the bundle. Story concepts record the durable definition of the work and never mirror progress, assignee, or blocking state. When implementation scope changes later, update the issue; when design or rationale changes, amend the concept too.
 - Make every story issue a direct native GitHub sub-issue of the EPIC issue. A Markdown task list, issue link, label, milestone, or dependency edge is not a substitute. Parentage expresses decomposition; `blocked by` and `blocking` express only explicit execution dependencies.
+- Require an acyclic graph of all story execution dependencies across every phase and projection. Each story must be closable in full once its declared prerequisites hold; an executable sequence of partial deliveries does not excuse an issue-level cycle. Diagnose cycles and propose a scope or design repair before presenting work as ready.
 - Treat a story that already has another parent as a conflict. Never reparent it without a separate exact preview and explicit approval naming both parents.
 - Write real frontmatter. Take timestamps from the clock and write every OKF timestamp as an ISO 8601 datetime with an explicit UTC offset, derive actors from the active host and the repository git identity, and never invent a model name, a human identifier, a verification event, or a `stale_after` value.
 - Add a `human:<id>` entry to `verified` only when the user has actually approved that content at a checkpoint.
@@ -180,7 +181,7 @@ The validator proves structure, frontmatter, routing consistency, and the intern
 - the decomposition review from [references/story-decomposition.md](references/story-decomposition.md):
   - the rationale for each consequential split or retained shared prerequisite;
   - the dependency graph, with each dependency's required output, release condition, and proposed native or documented projection and its rationale;
-  - the event sequence for any apparent story cycle, or the real cycle reported as a blocker;
+  - confirmation that the complete dependency graph is acyclic, or each unresolved cycle path with its phases, projections, and proposed scope or design repair;
   - candidate concurrent work, interference handling, and who owns integrated verification;
   - remaining bottlenecks and uncertainty;
 - any wording that was merged, split, or materially rewritten;
@@ -210,6 +211,8 @@ Generate issue bodies from the approved concepts:
 
 Use deterministic titles for idempotence. Detect existing EPIC, story, parent/sub-issue, dependency, branch, and PR state before creating anything. On `resume`, establish delivery evidence before adding a native dependency edge, as defined in [references/story-decomposition.md](references/story-decomposition.md#project-dependencies-into-github). On partial failure, resume from remote state and verify bodies and relationships before patching.
 
+Before the first affected local or remote publication mutation, reconcile the complete logical graph with the approved dependency table, routed specification, all body gates, and known existing dependencies, including relevant issues in other EPICs. Require acyclicity across native and documented conditions; resolve an uninspectable return path before affected writes. For legacy prose-only plans, disclose the structural validator's limitation and require normalization or semantic review before affected dependency or issue-body writes. A partially published cycle requires an approved plan repair that preserves existing identities and appends any new story identifiers; no silent state or parent changes. See [references/story-decomposition.md](references/story-decomposition.md#require-an-acyclic-story-dependency-graph).
+
 After exact-write approval, create or reuse the GitHub issues and move the approved directory to `docs/epics/EPIC-NNN-name/`. Then set `status: stable` on every concept, write each issue URL into the EPIC's `resource`, each `stories[].resource`, and each story concept's `resource`, and update the bundle. When `docs/epics/index.md` does not exist, create it from [assets/bundle-index-template.md](assets/bundle-index-template.md), adapt its language to the repository, and resolve or remove every placeholder. In the embedded layout, drop the template's frontmatter block, and when the enclosing directory's index lists its subdirectories, add an entry linking the collection. Add the EPIC to the index group matching its `epic_status`, newest first. Preserve an existing index's language and ordering. Never add future work without a published concept or issue to the index. If an existing index embeds future backlog, include a lossless move to the repository's backlog authority in the exact-write preview before removing it from the index. If the repository keeps a Markdown backlog and none exists, create `docs/epics/backlog.md` from [assets/backlog-concept-template.md](assets/backlog-concept-template.md) only when source backlog content exists; never invent deferred scope. Then run the required documentation and repository gates, commit, push, and open the PR. Retire the temporary source only after confirming that the published concept contains all of it and the user can recover the approved result; report what was removed and how it is recoverable. Do not claim the stories are implementable from a clean clone until the documentation PR is merged into their base branch.
 
 Validate the bundle before committing:
@@ -228,7 +231,7 @@ In resume mode:
 
 1. Establish the authoritative EPIC directory and current remote identifiers.
 2. Compare deterministic titles and bodies before deciding what is missing.
-3. Reuse existing issues and PRs; patch only stale projections.
+3. Review the complete logical dependency graph before affected mutations, resolve cycles or unknown return paths through the existing checkpoints, and reuse existing issues and PRs; patch only stale projections.
 4. Refuse ambiguous states such as two EPIC directories for the same number.
 5. Repeat validation and the exact-write checkpoint for any new remote mutation.
 

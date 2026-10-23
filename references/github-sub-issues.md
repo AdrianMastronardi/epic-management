@@ -120,6 +120,8 @@ Do not encode ordering as blocking dependencies.
 
 ## Dependency edges
 
+Before any affected publication or resume mutation, reconcile all logical dependencies, including documented phase gates and known prerequisites in other EPICs, and require an acyclic graph under [story-decomposition.md](story-decomposition.md#require-an-acyclic-story-dependency-graph). An acyclic set of native edges alone is insufficient. Parent/sub-issue links and reciprocal informational references do not enter this graph. If the necessary return paths are unknown or a legacy plan has only prose, resolve that uncertainty through normalization or semantic review before affected dependency or issue-body writes.
+
 `blocked by` and `blocking` are a native relation separate from parentage. Change them only after every story issue exists, and apply only the additions and removals approved at the exact-write checkpoint under the projection policy in [story-decomposition.md](story-decomposition.md#project-dependencies-into-github). Removing an edge discards an execution constraint: preview it by naming both issues and the reason.
 
 Read both directions before and after any change, together with the fields that qualify delivery evidence:

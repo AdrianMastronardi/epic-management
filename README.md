@@ -93,7 +93,7 @@ A bare invocation shows help and performs no repository reads, GitHub access, or
 
 The skill reads and obeys repository-specific guidance for language, labels, GitHub transport, protected branches, commits, checks, and pull-request lifecycle.
 
-Preparation and refinement review story boundaries to enable earlier verifiable deliveries and independent work where the benefit outweighs coordination cost. Dependencies identify the required output and the condition for starting, integrating, or completing; the review also covers shared-resource interference and integrated verification. The checkpoint presents the graph and remaining bottlenecks without turning story order or execution waves into artificial blockers. The bundle preserves this design while GitHub owns live blocking state. See [references/story-decomposition.md](references/story-decomposition.md) for the review criteria.
+Preparation and refinement review story boundaries to enable earlier verifiable deliveries and independent work where the benefit outweighs coordination cost. Every story must be closable once its declared prerequisites hold, and the complete logical dependency graph must be acyclic across all phases and projections. Dependencies identify the required output and the condition for starting, integrating, or completing; the review also covers shared-resource interference and integrated verification. The checkpoint presents the graph and remaining bottlenecks without turning story order or execution waves into artificial blockers. The bundle preserves this design while GitHub owns live blocking state. See [references/story-decomposition.md](references/story-decomposition.md) for the review criteria.
 
 ## Bundle model
 
@@ -152,7 +152,7 @@ Validate the whole bundle against OKF v0.2, passing the EPIC collection whether 
 python3 scripts/validate_okf_bundle.py docs/epics
 ```
 
-The EPIC validator checks frontmatter families, the actor convention, lifecycle values, numbering, routing consistency, story paths and resource agreement, applicable specification links, required sections, unresolved placeholders, forbidden temporary references, and draft labelling. When the `Dependencies` section uses the template's table, it also checks story and block identifiers, phases, projections, routing to the consumer, and cycles among native edges. The bundle validator checks OKF conformance and reports the tolerances OKF grants consumers, such as broken cross-links and date-only timestamps written against the earlier OKF v0.2 text, as warnings; `--strict` turns them into failures. Neither proves semantic completeness or that a dependency is real, which still requires a section-by-section comparison with the source specification and the decomposition review.
+The EPIC validator checks frontmatter families, the actor convention, lifecycle values, numbering, routing consistency, story paths and resource agreement, applicable specification links, required sections, unresolved placeholders, forbidden temporary references, and draft labelling. When the `Dependencies` section uses the template's table, it also checks story and block identifiers, phases, projections, routing to the consumer, and cycles across all internal dependencies, including documented integration and completion gates. The bundle validator applies the same dependency-table checks to EPICs in the collection and checks OKF conformance. It reports the tolerances OKF grants consumers, such as broken cross-links and date-only timestamps written against the earlier OKF v0.2 text, as warnings; `--strict` turns them into failures. Neither proves semantic completeness, that the table includes every prerequisite, or that a dependency is real. New and refined plans must use the table for every dependency; legacy prose-only plans remain structurally compatible but need normalization or semantic review before affected dependency or issue-body writes. Publication and resume reconcile the full approved graph with body gates and known existing dependencies, including relevant cross-EPIC paths, before affected mutations. A section-by-section comparison with the source specification and the decomposition review remain necessary.
 
 Both validators use PyYAML when it is importable and fall back to a strict parser for the documented frontmatter subset otherwise, so they run without third-party dependencies.
 
@@ -193,6 +193,7 @@ epic-management/
 │   └── validate_okf_bundle.py  # OKF bundle conformance validator
 ├── tests/
 │   ├── story-decomposition-cases.md  # planning inputs for behavioral evaluation
+│   ├── story-decomposition-evaluation.md  # isolated baseline/candidate results
 │   ├── story-decomposition-rubric.md  # expected decisions, kept from the evaluator
 │   └── test_validators.py  # deterministic validator regression tests
 ├── CHANGELOG.md  # version history

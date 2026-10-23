@@ -28,6 +28,7 @@ from okf import (
     LINK_RE,
     OKF_VERSION,
     FrontmatterError,
+    as_list,
     as_text,
     check_sources,
     check_stale_after,
@@ -40,6 +41,7 @@ from okf import (
     read_document,
     STATUS_VALUES,
 )
+from validate_epic import validate_dependencies
 
 
 EPIC_DIRECTORY_RE = re.compile(r"^EPIC-\d{3}-[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -182,6 +184,24 @@ def validate_concept(
         check_sources(document, label, errors, required=False, warnings=warnings)
 
 
+def validate_epic_dependencies(path: Path, root: Path, errors: list[str]) -> None:
+    """Share dependency and SPEC-routing checks, leaving other OKF tolerances intact."""
+    try:
+        document = read_document(path)
+    except (FrontmatterError, OSError):
+        # The normal concept pass already reports unreadable documents.
+        return
+    declared = [
+        as_text(entry.get("id"))
+        for entry in as_list(document.get("stories"))
+        if isinstance(entry, dict)
+    ]
+    dependency_errors: list[str] = []
+    validate_dependencies(document, declared, None, dependency_errors)
+    label = relative(root, path)
+    errors.extend(label + error.removeprefix("epic.md") for error in dependency_errors)
+
+
 def validate_links(path: Path, root: Path, warnings: list[str]) -> None:
     label = relative(root, path)
     text = path.read_text(encoding="utf-8")
@@ -247,6 +267,8 @@ def validate(collection: Path, strict: bool) -> tuple[list[str], list[str]]:
             errors.append(f"{listing}: {directory.name} is published but not listed")
         if not (directory / "epic.md").is_file():
             errors.append(f"{label}: missing epic.md")
+        else:
+            validate_epic_dependencies(directory / "epic.md", root, errors)
         if not (directory / "index.md").is_file():
             errors.append(f"{label}: missing index.md")
 

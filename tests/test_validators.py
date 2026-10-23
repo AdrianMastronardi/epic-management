@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -177,18 +178,27 @@ Implement the example.
         )
         return epic
 
-    def create_dependent_epic(self, dependency_rows: str) -> Path:
-        """Extend the working fixture with a second story and a dependency table."""
-        epic = self.create_epic(published=False)
+    def create_dependent_epic(
+        self, dependency_rows: str, story_count: int = 2, published: bool = False
+    ) -> Path:
+        """Extend a complete fixture with stories and a dependency table."""
+        epic = self.create_epic(published=published)
         path = epic / "epic.md"
         text = path.read_text(encoding="utf-8")
-        text = text.replace(
-            f"    concept: ./{STORY_FILE}\n",
-            f"    concept: ./{STORY_FILE}\n"
-            "  - id: STORY-001-002\n"
-            "    title: Consume example\n"
-            f"    concept: ./{SECOND_STORY_FILE}\n",
-        )
+        entries = ""
+        for serial in range(1, story_count + 1):
+            name = "Implement example" if serial == 1 else "Consume example"
+            slug = "implement-example" if serial == 1 else "consume-example"
+            entries += (
+                f"  - id: STORY-001-{serial:03}\n"
+                f"    title: {name}\n"
+                f"    concept: ./STORY-001-{serial:03}-{slug}.md\n"
+            )
+            if published:
+                entries += f'    resource: "https://github.com/example/repository/issues/{serial + 1}"\n'
+        before, rest = text.split("stories:\n", 1)
+        _, after = rest.split("---", 1)
+        text = before + "stories:\n" + entries + "---" + after
         text = text.replace(
             "## Affected components",
             "### SPEC-001-002: Example contract\n\n"
@@ -196,7 +206,10 @@ Implement the example.
             "## Affected components",
         )
         text = text.replace("None.\n", DEPENDENCY_HEADER + dependency_rows)
-        text += "| SPEC-001-002 | operational | STORY-001-001, STORY-001-002 |\n"
+        destinations = ", ".join(
+            f"STORY-001-{serial:03}" for serial in range(1, story_count + 1)
+        )
+        text += f"| SPEC-001-002 | operational | {destinations} |\n"
         path.write_text(text, encoding="utf-8")
 
         first = epic / STORY_FILE
@@ -212,31 +225,37 @@ Implement the example.
             ),
             encoding="utf-8",
         )
-        self.write(
-            epic / SECOND_STORY_FILE,
-            story.replace(
-                "STORY-001-001 — Implement example", "STORY-001-002 — Consume example"
+        for serial in range(2, story_count + 1):
+            identifier = f"STORY-001-{serial:03}"
+            filename = f"{identifier}-consume-example.md"
+            self.write(
+                epic / filename,
+                story.replace(
+                    "STORY-001-001 — Implement example",
+                    f"{identifier} — Consume example",
+                )
+                .replace(
+                    "applicable_blocks: [SPEC-001-001]",
+                    "applicable_blocks: [SPEC-001-002]",
+                )
+                .replace(
+                    "- [SPEC-001-001: Example behavior](./epic.md#spec-001-001-example-behavior)",
+                    "- [SPEC-001-002: Example contract](./epic.md#spec-001-002-example-contract)",
+                )
+                .replace("issues/2", f"issues/{serial + 1}"),
             )
-            .replace(
-                "applicable_blocks: [SPEC-001-001]", "applicable_blocks: [SPEC-001-002]"
+            index = epic / "index.md"
+            index.write_text(
+                index.read_text(encoding="utf-8")
+                + f"- [{identifier} — Consume example]({filename}) - Consume the example.\n",
+                encoding="utf-8",
             )
-            .replace(
-                "- [SPEC-001-001: Example behavior](./epic.md#spec-001-001-example-behavior)",
-                "- [SPEC-001-002: Example contract](./epic.md#spec-001-002-example-contract)",
-            ),
-        )
-        index = epic / "index.md"
-        index.write_text(
-            index.read_text(encoding="utf-8")
-            + f"- [STORY-001-002 — Consume example]({SECOND_STORY_FILE}) - Consume the example.\n",
-            encoding="utf-8",
-        )
         return epic
 
     def test_dependency_table_accepts_each_projection(self) -> None:
         epic = self.create_dependent_epic(
             "| STORY-001-001 | STORY-001-002 | Contract | start | Contract merged | native | SPEC-001-002 |\n"
-            "| STORY-001-002 | STORY-001-001 | Client | integrate | Client merged | documented | [SPEC-001-002](#spec-001-002-example-contract) |\n"
+            "| STORY-001-001 | STORY-001-002 | Client | integrate | Client merged | documented | [SPEC-001-002](#spec-001-002-example-contract) |\n"
             "| External schema registry | STORY-001-002 | Registry access | complete | Access granted | documented | SPEC-001-002 |\n"
         )
         self.assertEqual(validate_epic(epic, None), [])
@@ -251,7 +270,11 @@ Implement the example.
         )
 
     def test_dependency_table_accepts_escaped_pipes(self) -> None:
-        for output in (r"`Result = Ok \| Error`", r"Contract \\", r"Contract \\\| fallback"):
+        for output in (
+            r"`Result = Ok \| Error`",
+            r"Contract \\",
+            r"Contract \\\| fallback",
+        ):
             with self.subTest(output=output):
                 epic = self.create_dependent_epic(
                     f"| STORY-001-001 | STORY-001-002 | {output}| start | "
@@ -303,10 +326,404 @@ Implement the example.
         )
         self.assertTrue(
             any(
-                "native dependency projections form a cycle" in error
+                "story dependencies form a cycle" in error
                 for error in validate_epic(epic, None)
             )
         )
+
+    @staticmethod
+    def dependency_row(
+        producer: int, consumer: int, phase: str = "start", projection: str = "native"
+    ) -> str:
+        return (
+            f"| STORY-001-{producer:03} | STORY-001-{consumer:03} | "
+            r"Contract `A \| B` | "
+            f"{phase} | Contract merged | {projection} | SPEC-001-002 |\n"
+        )
+
+    def check_dependency_graph(
+        self, rows: str, story_count: int, expected_path: str | None
+    ) -> None:
+        for embedded in (False, True):
+            with tempfile.TemporaryDirectory() as directory:
+                with mock.patch.object(self, "root", Path(directory)):
+                    epic = self.create_dependent_epic(rows, story_count, published=True)
+                    if embedded:
+                        self.embed_collection(epic)
+                    for parser in (okf._yaml, None):
+                        with self.subTest(embedded=embedded, fallback=parser is None):
+                            with mock.patch.object(okf, "_yaml", parser):
+                                epic_errors = validate_epic(epic, None)
+                                bundle_errors, warnings = validate_bundle(
+                                    epic.parent, strict=True
+                                )
+                            self.assertEqual(warnings, [])
+                            if expected_path is None:
+                                self.assertEqual(epic_errors, [])
+                                self.assertEqual(bundle_errors, [])
+                                continue
+                            for errors in (epic_errors, bundle_errors):
+                                diagnostic = next(
+                                    (e for e in errors if "form a cycle" in e), ""
+                                )
+                                self.assertIn(expected_path, diagnostic)
+                                self.assertIn("epic.md line ", diagnostic)
+                                self.assertIn("phase=", diagnostic)
+                                self.assertIn("projection=", diagnostic)
+                            self.assertTrue(
+                                any(
+                                    f"{EPIC_DIRECTORY}/epic.md:" in e
+                                    for e in bundle_errors
+                                ),
+                                bundle_errors,
+                            )
+
+    def test_all_dependency_phases_and_projections_participate_in_cycles(self) -> None:
+        variants = (
+            ("start", "native", "complete", "documented"),
+            ("integrate", "documented", "complete", "documented"),
+            ("start", "documented", "integrate", "documented"),
+            ("start", "native", "start", "native"),
+        )
+        for phase_a, projection_a, phase_b, projection_b in variants:
+            with self.subTest(phases=(phase_a, phase_b)):
+                rows = self.dependency_row(1, 2, phase_a, projection_a)
+                rows += self.dependency_row(2, 1, phase_b, projection_b)
+                self.check_dependency_graph(
+                    rows,
+                    2,
+                    "STORY-001-001 requires STORY-001-002 requires STORY-001-001",
+                )
+
+    def test_transitive_cycle_includes_every_implicated_edge(self) -> None:
+        rows = self.dependency_row(1, 2)
+        rows += self.dependency_row(2, 3, "integrate", "documented")
+        rows += self.dependency_row(3, 1, "complete", "documented")
+        self.check_dependency_graph(
+            rows,
+            3,
+            "STORY-001-001 requires STORY-001-003 requires STORY-001-002 requires STORY-001-001",
+        )
+        epic = self.create_dependent_epic(rows, 3)
+        diagnostic = next(e for e in validate_epic(epic, None) if "form a cycle" in e)
+        for metadata in (
+            "phase=start, projection=native",
+            "phase=integrate, projection=documented",
+            "phase=complete, projection=documented",
+        ):
+            self.assertIn(metadata, diagnostic)
+
+    def test_self_dependencies_are_rejected_for_both_projections(self) -> None:
+        for phase, projection in (("start", "native"), ("complete", "documented")):
+            rows = self.dependency_row(1, 1, phase, projection)
+            self.check_dependency_graph(rows, 2, "STORY-001-001 requires STORY-001-001")
+            epic = self.create_dependent_epic(rows)
+            self.assertTrue(
+                any("cannot depend on itself" in e for e in validate_epic(epic, None))
+            )
+
+    def test_acyclic_dependency_graphs_pass_both_validators(self) -> None:
+        graphs = {
+            "independent": "",
+            "linear": self.dependency_row(1, 2) + self.dependency_row(2, 3),
+            "diamond": (
+                self.dependency_row(1, 2)
+                + self.dependency_row(1, 3)
+                + self.dependency_row(2, 4, "integrate", "documented")
+                + self.dependency_row(3, 4, "complete", "documented")
+            ),
+            "mixed_and_external": (
+                self.dependency_row(1, 2)
+                + self.dependency_row(1, 2, "integrate", "documented")
+                + self.dependency_row(2, 3, "complete", "documented")
+                + "| External registry | STORY-001-004 | Access | complete | Access granted | documented | SPEC-001-002 |\n"
+            ),
+        }
+        for name, rows in graphs.items():
+            with self.subTest(graph=name):
+                self.check_dependency_graph(rows, 4, None)
+
+    def test_cycle_path_is_deterministic_when_rows_are_reordered(self) -> None:
+        rows = [self.dependency_row(1, 2), self.dependency_row(2, 1)]
+        paths = []
+        for ordered in (rows, list(reversed(rows))):
+            epic = self.create_dependent_epic("".join(ordered))
+            diagnostic = next(
+                e for e in validate_epic(epic, None) if "form a cycle" in e
+            )
+            paths.append(diagnostic.split(" (", 1)[0])
+        self.assertEqual(paths[0], paths[1])
+
+    def test_bundle_preserves_dependency_metadata_and_routing_checks(self) -> None:
+        invalid = {
+            "unknown story": ("STORY-001-001", "STORY-001-009", "not a declared story"),
+            "unknown consumer": (
+                "STORY-001-002",
+                "STORY-001-009",
+                "consumer STORY-001-009",
+            ),
+            "invalid phase": ("| start |", "| begin |", "phase must be one of"),
+            "invalid projection": (
+                "| native |",
+                "| optional |",
+                "projection must be one of",
+            ),
+            "native completion": (
+                "| start |",
+                "| complete |",
+                "native projection requires",
+            ),
+            "unknown spec": ("SPEC-001-002", "SPEC-001-099", "unknown SPEC-001-099"),
+            "unrouted spec": (
+                "SPEC-001-002",
+                "SPEC-001-001",
+                "not routed to STORY-001-002",
+            ),
+            "wrong columns": ("| Contract merged |", "", "must have seven columns"),
+            "empty output": (r"Contract `A \| B`", "", "requires an output"),
+            "empty release": (
+                "Contract merged",
+                "",
+                "requires an output and a release condition",
+            ),
+            "empty spec": ("SPEC-001-002", "", "must reference a SPEC block"),
+        }
+        for name, (old, new, expected) in invalid.items():
+            with self.subTest(case=name):
+                epic = self.create_dependent_epic(
+                    self.dependency_row(1, 2).replace(old, new), published=True
+                )
+                for errors in (
+                    validate_epic(epic, None),
+                    validate_bundle(epic.parent, False)[0],
+                ):
+                    self.assertTrue(any(expected in e for e in errors), errors)
+
+    def test_bundle_dependency_checks_preserve_okf_consumer_tolerances(self) -> None:
+        epic = self.create_dependent_epic(self.dependency_row(1, 2), published=True)
+        path = epic / "epic.md"
+        text = path.read_text(encoding="utf-8").replace(
+            "## Affected components",
+            "### SPEC-001-003: Background\n\nContext only.\n\n## Affected components",
+        )
+        text += "| SPEC-001-003 | context | DOCUMENT |\n"
+        path.write_text(text, encoding="utf-8")
+        self.assertEqual(validate_epic(epic, None), [])
+        self.assertEqual(validate_bundle(epic.parent, True), ([], []))
+        path.write_text(
+            text.replace(
+                self.dependency_row(1, 2),
+                self.dependency_row(1, 2).replace("SPEC-001-002", "SPEC-001-003"),
+            ),
+            encoding="utf-8",
+        )
+        for errors in (
+            validate_epic(epic, None),
+            validate_bundle(epic.parent, False)[0],
+        ):
+            self.assertTrue(
+                any("SPEC-001-003 must be operational" in e for e in errors), errors
+            )
+        path.write_text(
+            text.replace("status: stable", 'status: stable\nstale_after: "2027-04-17"'),
+            encoding="utf-8",
+        )
+        story = epic / STORY_FILE
+        story.write_text(
+            story.read_text(encoding="utf-8") + "\n[Future knowledge](./future.md)\n",
+            encoding="utf-8",
+        )
+        errors, warnings = validate_bundle(epic.parent, False)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 2, warnings)
+        for expected in ("stale_after", "future.md"):
+            self.assertTrue(any(expected in warning for warning in warnings), warnings)
+        strict_errors, warnings = validate_bundle(epic.parent, True)
+        self.assertEqual(len(strict_errors), 2)
+        self.assertEqual(warnings, [])
+
+    def test_informational_links_and_legacy_prose_do_not_become_edges(self) -> None:
+        epic = self.create_dependent_epic(self.dependency_row(1, 2), published=True)
+        for filename, target in (
+            (STORY_FILE, SECOND_STORY_FILE),
+            (SECOND_STORY_FILE, STORY_FILE),
+        ):
+            path = epic / filename
+            path.write_text(
+                path.read_text(encoding="utf-8")
+                + f"\nRelated: [other story](./{target}).\n",
+                encoding="utf-8",
+            )
+        self.assertEqual(validate_epic(epic, None), [])
+        self.assertEqual(validate_bundle(epic.parent, True), ([], []))
+        path = epic / "epic.md"
+        text = path.read_text(encoding="utf-8").replace(
+            DEPENDENCY_HEADER + self.dependency_row(1, 2),
+            "STORY-001-001 depends on STORY-001-002; STORY-001-002 depends on STORY-001-001.\n",
+        )
+        path.write_text(text, encoding="utf-8")
+        # Structural compatibility is not semantic assurance; workflow review is required.
+        self.assertEqual(validate_epic(epic, None), [])
+        self.assertEqual(validate_bundle(epic.parent, True), ([], []))
+
+    def test_dependency_cycles_fail_through_both_cli_entry_points(self) -> None:
+        for embedded in (False, True):
+            with tempfile.TemporaryDirectory() as directory:
+                with mock.patch.object(self, "root", Path(directory)):
+                    epic = self.create_dependent_epic(
+                        self.dependency_row(1, 2)
+                        + self.dependency_row(2, 1, "complete", "documented"),
+                        published=True,
+                    )
+                    if embedded:
+                        self.embed_collection(epic)
+                    for script, target in (
+                        ("validate_epic.py", epic),
+                        ("validate_okf_bundle.py", epic.parent),
+                    ):
+                        for options in ([], ["-S"]):
+                            result = subprocess.run(
+                                [
+                                    sys.executable,
+                                    "-B",
+                                    *options,
+                                    str(PROJECT_ROOT / "scripts" / script),
+                                    str(target),
+                                ],
+                                capture_output=True,
+                                text=True,
+                                check=False,
+                            )
+                            self.assertEqual(
+                                result.returncode, 1, result.stdout + result.stderr
+                            )
+                            self.assertIn(
+                                "story dependencies form a cycle",
+                                result.stdout + result.stderr,
+                            )
+
+    def test_bundle_reports_missing_dependency_distribution_without_a_traceback(
+        self,
+    ) -> None:
+        for heading in (None, "## GitHub distributions", "## GitHub distribution "):
+            with self.subTest(heading=heading):
+                epic = self.create_dependent_epic(
+                    self.dependency_row(1, 2)
+                    + self.dependency_row(2, 1, "complete", "documented"),
+                    published=True,
+                )
+                path = epic / "epic.md"
+                text = path.read_text(encoding="utf-8")
+                if heading is None:
+                    text = text.split("## GitHub distribution")[0]
+                else:
+                    text = text.replace("## GitHub distribution", heading)
+                path.write_text(text, encoding="utf-8")
+                for parser in (okf._yaml, None):
+                    with mock.patch.object(okf, "_yaml", parser):
+                        errors, _ = validate_bundle(epic.parent, False)
+                    self.assertTrue(
+                        any(
+                            "requires a GitHub distribution section" in e
+                            for e in errors
+                        ),
+                        errors,
+                    )
+                    self.assertTrue(any("form a cycle" in e for e in errors), errors)
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "-B",
+                        str(PROJECT_ROOT / "scripts" / "validate_okf_bundle.py"),
+                        str(epic.parent),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertNotIn("Traceback", result.stdout + result.stderr)
+
+    def test_formatted_story_ids_cannot_hide_dependency_cycles(self) -> None:
+        for producer in (
+            "`STORY-001-002`",
+            "[STORY-001-002](./STORY-001-002-consume-example.md)",
+            "[story-001-002](./STORY-001-002-consume-example.md)",
+        ):
+            for role in ("producer", "consumer"):
+                with self.subTest(producer=producer, role=role):
+                    first = self.dependency_row(1, 2)
+                    second = self.dependency_row(2, 1, "complete", "documented")
+                    if role == "producer":
+                        second = second.replace("STORY-001-002", producer, 1)
+                    else:
+                        first = first.replace("STORY-001-002", producer, 1)
+                    rows = first + second
+                    self.check_dependency_graph(
+                        rows,
+                        2,
+                        "STORY-001-001 requires STORY-001-002 requires STORY-001-001",
+                    )
+                    epic = self.create_dependent_epic(rows)
+                    self.assertTrue(
+                        any(
+                            f"{role} must use the bare story identifier STORY-001-002"
+                            in e
+                            for e in validate_epic(epic, None)
+                        )
+                    )
+
+    def test_dependency_diagnostics_reference_exact_row_lines(self) -> None:
+        rows = self.dependency_row(1, 2)
+        rows += self.dependency_row(2, 3, "integrate", "documented")
+        rows += self.dependency_row(3, 1, "complete", "documented")
+        epic = self.create_dependent_epic(rows, 3, published=True)
+        lines = (epic / "epic.md").read_text(encoding="utf-8").splitlines()
+        for errors in (
+            validate_epic(epic, None),
+            validate_bundle(epic.parent, False)[0],
+        ):
+            diagnostic = next(e for e in errors if "form a cycle" in e)
+            for row in rows.splitlines():
+                self.assertIn(
+                    f"epic.md line {lines.index(row) + 1}, phase=", diagnostic
+                )
+
+    def test_bundle_checks_distribution_only_to_resolve_dependency_routing(
+        self,
+    ) -> None:
+        rows = self.dependency_row(1, 2)
+        epic = self.create_dependent_epic(rows, published=True)
+        path = epic / "epic.md"
+        text = (
+            path.read_text(encoding="utf-8")
+            + "| Extra | malformed | distribution | row |\n"
+        )
+        path.write_text(text, encoding="utf-8")
+        errors, _ = validate_bundle(epic.parent, False)
+        self.assertTrue(
+            any("distribution row must have three columns" in e for e in errors), errors
+        )
+        path.write_text(
+            text.replace(DEPENDENCY_HEADER + rows, "None.\n"), encoding="utf-8"
+        )
+        self.assertEqual(validate_bundle(epic.parent, True), ([], []))
+
+    def test_dependency_producer_cannot_name_several_stories(self) -> None:
+        rows = self.dependency_row(1, 2).replace(
+            "| STORY-001-001 |", "| STORY-001-001 or STORY-001-002 |", 1
+        )
+        epic = self.create_dependent_epic(rows, published=True)
+        for errors in (
+            validate_epic(epic, None),
+            validate_bundle(epic.parent, False)[0],
+        ):
+            self.assertTrue(
+                any(
+                    "producer must name a single story identifier" in e for e in errors
+                ),
+                errors,
+            )
 
     def test_valid_epic_passes_with_pyyaml_and_fallback(self) -> None:
         epic = self.create_epic()

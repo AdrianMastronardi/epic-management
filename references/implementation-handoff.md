@@ -39,6 +39,7 @@ Can an implementer determine:
 4. Why the consequential decisions were made, which are binding, and which choices remain open to the implementer?
 5. How to verify the result, including the relevant edge and failure cases?
 6. Which outputs are required to start, integrate, or complete the work, what makes them usable, and how shared contracts and resources remain compatible with concurrent stories? Apply the review in [story-decomposition.md](story-decomposition.md), including responsibility for integrated verification.
+7. Can the story close its complete scope once those prerequisites hold, without waiting on a story that depends on it? Reconcile every prerequisite in tasks, acceptance, and resolved specification with the dependency table, and check the complete story graph across all phases and projections. A return dependency hidden in prose is still an edge; partial delivery or passing with a double does not remove it.
 
 If an answer depends on remembering the discussion, “see parent issue,” an unexplained design link, or a task such as “implement the service,” add the missing substance to a routed specification block. A structurally valid document with these gaps is not ready for implementation. Report unresolved blockers at the existing checkpoint; do not invent answers to pass the review.
 

@@ -43,3 +43,35 @@ The source defines three stories. The first reshapes the billing data model and 
 ## Case 10: Resuming an older publication
 
 A published EPIC's `Dependencies` section says only “STORY-003 depends on STORY-002”, with no further detail, and GitHub shows STORY-003 blocked by STORY-002. The same EPIC's approved plan states that STORY-004 cannot start until STORY-001 delivers a merged configuration loader, which is STORY-001's entire deliverable; that edge was never created. On resume, STORY-001 is closed as completed, has no linked pull request, and the loader module is not on the base branch. STORY-004 has not started. Plan the remaining dependency actions.
+
+## Case 11: A return gate outside the table
+
+A creates a reusable encoder and B builds a downstream export adapter. The dependency table contains only B's native start dependency on A's merged encoder. A's tasks also include final acceptance against B's real adapter before A can close. A can publish the encoder before that acceptance. Both issue bodies include those tasks, and a publication request is pending. No remote resources exist yet.
+
+## Case 12: Documented delivery conditions
+
+A emits a validated schema and later integrates a generated SDK. B generates that SDK from A's schema. The table records B's schema start gate as documented because the schema becomes available before A closes, and A's SDK integration gate as documented because A can start without the SDK. There are no native blockers. Neither output exists. The source asks for a publication preview.
+
+## Case 13: Three services
+
+A delivers a protocol definition that B needs to start; nothing from A is usable until it merges. B delivers a compatibility library that C requires for integration. C supplies a signed fixture that A's acceptance criteria require before A closes. A can publish its protocol before completing acceptance. The table represents B's start condition as native and the other two conditions as documented. All three outputs are missing.
+
+## Case 14: Partial publication with existing identities
+
+Publication began for EPIC-014. STORY-014-001 owns both a schema and its final integration; STORY-014-002 generates a client from that schema. Their GitHub issues already exist, both are open and parented to EPIC-014, and no documentation branch or PR exists yet. The approved table says STORY-014-002 needs STORY-014-001's schema before starting, and STORY-014-001 needs STORY-014-002's real client before integration. Both conditions are documented. No output is delivered. The user asks to resume the previously approved publication without duplicate issues.
+
+## Case 15: A prerequisite in another EPIC
+
+EPIC-015's issue A requires a parser from EPIC-016's issue B before final acceptance. B's published body says that its parser verification requires A's real import command. A can implement that command early. The local EPIC table names B's issue URL as an external documented completion prerequisite. Consider both the supplied readable-body evidence and a variant where B's body and dependency list cannot be read. The user asks to publish A's plan.
+
+## Case 16: Older prose-only plan
+
+A legacy EPIC has no dependency table. Its prose says that A needs B's output for integration and B needs A's output to start, with both outputs available before their producers close. Existing open issues match that prose and have no native blockers. The local structural validators pass. The user first asks for inspection, then asks to resume by updating the issue bodies and adding any missing dependency relationships. No normalization or new design has been approved.
+
+## Case 17: Source insists on retaining scope
+
+The source requires A to own a schema and final client integration, B to generate the client from A's schema, and each issue to retain its entire stated scope. It explicitly refuses a separate schema or integration issue. A can publish its schema early, and B can deliver the client before A integrates it. Neither artifact exists. The user asks to prepare a publishable plan from this source.
+
+## Case 18: Navigation without execution gates
+
+Two independent stories add optional display fields to separate response types. Neither needs the other's code, output, tests, or acceptance. Both bodies link to the other story under “Related work”, and both are direct children of the same EPIC. The source prefers showing the first field before the second in a demo. There are no execution prerequisites.

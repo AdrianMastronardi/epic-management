@@ -16,6 +16,32 @@ Within each section, entries are sorted in case-insensitive alphabetical order b
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
+### Skill
+
+- `references/github-publication.md`, `references/github-sub-issues.md`: require complete dependency-graph review before affected publication or resume writes, including documented gates, known cross-EPIC paths, and legacy-plan uncertainty.
+- `references/implementation-handoff.md`: checks that a story can close its entire scope and that prerequisite gates agree with the dependency table.
+- `references/okf-bundle.md`: documents all-phase dependency validation in both entry points and the semantic-review requirement for prose-only plans.
+- `references/story-decomposition.md`: replaces the partial-delivery cycle exception with an acyclic story graph and closable scopes, preserving source coverage, real integration checks, and published identities during scope repair.
+- `SKILL.md`: requires complete-graph acyclicity at coverage and publication checkpoints and an approved repair before resuming affected cyclic work.
+
+### Templates
+
+- `assets/epic-concept-template.md`, `assets/story-concept-template.md`: prompt for an acyclic complete graph, explicit prerequisites, and independently closable story scopes.
+
+### Validation
+
+- `scripts/validate_epic.py`: **Breaking:** rejects previously accepted cyclic tables across all internal dependency phases and projections, including completed or cancelled EPICs, with deterministic paths and row, phase, and projection context. Rejects formatted story cells that could hide internal edges.
+- `scripts/validate_okf_bundle.py`: shares dependency-table and SPEC-routing checks for each published EPIC without changing unrelated OKF consumer tolerances; missing distribution sections produce diagnostics rather than tracebacks. A historical cycle now blocks validation of the whole bundle.
+- `tests/story-decomposition-cases.md`, `tests/story-decomposition-rubric.md`: reverse the schema/client cycle expectation and cover hidden gates, longer cycles, partial publication, cross-EPIC uncertainty, legacy prose, source conflicts, and informational links.
+- `tests/story-decomposition-evaluation.md`: records independent isolated planning runs against release 0.4.0 and the candidate across 18 cases, with manual rubric assessment and explicit evaluation limits.
+- `tests/test_validators.py`: covers cyclic and acyclic graphs, metadata and routing checks, both layouts and parsers, and CLI failures through both validator entry points.
+
+### Documentation
+
+- `CONTRIBUTING.md`, `README.md`: state the complete-graph invariant and explain the limits of structural dependency validation.
+
 ## [0.4.0] - 2026-10-18
 
 ### Skill
@@ -238,7 +264,8 @@ The skill provides `help`, `prepare`, `refine`, `publish`, `prepare-and-publish`
 - `.vscode/extensions.json`: recommends the Markdownlint and Prettier editor integrations.
 - `.vscode/settings.json`: enables Markdown formatting and lint fixes on save, preserves logical prose lines, normalizes final newlines, and trims trailing whitespace.
 
-[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/AdrianMastronardi/epic-management/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/AdrianMastronardi/epic-management/compare/v0.3.0...v0.3.1
